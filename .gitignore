@@ -1,0 +1,32 @@
+## --- Visual Studio & .NET Build Output ---
+bin/
+obj/
+TestResults/
+[Vv]isual[Ss]tudio/
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## --- NuGet Packages ---
+# Only exclude the folder; NuGet will restore them on other machines
+packages/
+*.nupkg
+
+## --- User-Specific / Local Settings ---
+# We keep appsettings.json, but ignore development secrets
+appsettings.Development.json
+*.pfx
+*.publishsettings
+
+## --- Operating System Files ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+## --- Rider / JetBrains ---
+.idea/
+*.sln.iml
+.env

@@ -10,7 +10,6 @@ public static class UserEndpoints
 {
     public static void MapUserEndpoints(this IEndpointRouteBuilder app)
     {
-        // All user-related routes grouped under /api/users
         var group = app.MapGroup("/api/users");
 
         group.MapPost("/register", async (User user, IUserRepository repo, IValidator<User> validator) =>

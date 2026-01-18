@@ -6,7 +6,7 @@ using PortfolioPro.Interfaces;
 using PortfolioPro.Models;
 
 namespace PortfolioPro.Services;
-/** Made for handling JWT token creation **/
+/** ya can't touch this **/
 public class TokenService(IConfiguration config) : ITokenService
 {
     public string CreateToken(User user)
@@ -32,7 +32,6 @@ public class TokenService(IConfiguration config) : ITokenService
             Audience = config["Jwt:Audience"]
         };
 
-        // 5. Create and Write: Generates the security token and converts it to a final string.
         var tokenHandler = new JwtSecurityTokenHandler();
         var token = tokenHandler.CreateToken(tokenDescriptor);
 

@@ -1,4 +1,4 @@
-using PortfolioPro.Models;
+using PortfolioPro.Core.Models;
 /** This is an interface for
 managing all project data prior 
 to storage in the database.

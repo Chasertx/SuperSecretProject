@@ -3,7 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using PortfolioPro.Interfaces;
-using PortfolioPro.Models;
+using PortfolioPro.Core.Models;
 
 namespace PortfolioPro.Services;
 /** ya can't touch this **/
@@ -15,13 +15,12 @@ public class TokenService(IConfiguration config) : ITokenService
 
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
 
-        var claims = new List<Claim>
-        {
-            new(JwtRegisteredClaimNames.NameId, user.Id.ToString()),
-            new(JwtRegisteredClaimNames.UniqueName, user.Username),
-            new(ClaimTypes.Email, user.Email),
-            new(ClaimTypes.Role, user.Role)
-        };
+        var claims = new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()) // This is what your POST reads
+            };
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {

@@ -1,17 +1,17 @@
 using FluentValidation;
-using PortfolioPro.Models;
+using PortfolioPro.Core.Models;
 using PortfolioPro.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace PortfolioPro.Endpoints;
 
-/** * This defines all api endpoints for 
- * managing project data. You can even add
- a picture of a wombat to your project
- since they're the coolest.
- **/
 public static class ProjectEndpoints
 {
+    /// <summary>
+    /// This defines all api endpoints for managing project data. 
+    /// You can even add a picture of a wombat to your project 
+    /// since they're the coolest.
+    /// </summary>
     public static void MapProjectEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/projects");
@@ -38,9 +38,7 @@ public static class ProjectEndpoints
             if (userIdClaim == null) return Results.Unauthorized();
             var userId = Guid.Parse(userIdClaim);
 
-
             var imageUrl = await storageService.UploadImageAsync(image);
-
 
             var newProject = new Project
             {
@@ -52,11 +50,9 @@ public static class ProjectEndpoints
                 UserId = userId
             };
 
-
             var validationResult = await validator.ValidateAsync(newProject);
             if (!validationResult.IsValid)
                 return Results.ValidationProblem(validationResult.ToDictionary());
-
 
             await projectRepo.AddProjectAsync(newProject);
 
@@ -65,6 +61,16 @@ public static class ProjectEndpoints
         .DisableAntiforgery()
         .RequireAuthorization();
 
+        group.MapGet("/my-projects", async (HttpContext context, IProjectRepository projectRepo) =>
+        {
+            var userIdClaim = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null) return Results.Unauthorized();
+
+            var userId = Guid.Parse(userIdClaim);
+            var projects = await projectRepo.GetProjectsByUserIdAsync(userId);
+
+            return Results.Ok(projects);
+        }).RequireAuthorization();
 
         group.MapDelete("/{id:guid}", async (Guid id, IProjectRepository repo) =>
         {

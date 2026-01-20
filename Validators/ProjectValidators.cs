@@ -1,5 +1,5 @@
 using FluentValidation;
-using PortfolioPro.Models;
+using PortfolioPro.Core.Models;
 
 namespace PortfolioPro.Validators;
 /** This is here so you don't touch

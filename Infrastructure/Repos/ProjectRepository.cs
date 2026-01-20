@@ -1,7 +1,7 @@
 using System.Data;
 using Dapper;
 using PortfolioPro.Data;
-using PortfolioPro.Models;
+using PortfolioPro.Core.Models;
 using PortfolioPro.Interfaces;
 
 namespace PortfolioPro.Repositories;
@@ -28,7 +28,7 @@ public class ProjectRepository(DbConnectionFactory connectionFactory) : IProject
     {
         using var connection = connectionFactory.Create();
         const string sql = @"
-            SELECT id, user_id AS UserId, title, description, project_url AS ProjectUrl, created_at AS CreatedAt 
+            SELECT id, user_id AS UserId, title, description, image_url AS ImageUrl, project_url AS ProjectUrl, created_at AS CreatedAt 
             FROM projects 
             WHERE user_id = @UserId";
 

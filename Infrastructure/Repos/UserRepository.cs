@@ -1,7 +1,7 @@
 using System.Data;
 using Dapper;
 using PortfolioPro.Data;
-using PortfolioPro.Models;
+using PortfolioPro.Core.Models;
 using PortfolioPro.Interfaces;
 
 namespace PortfolioPro.Repositories;
@@ -76,5 +76,27 @@ public class UserRepository(DbConnectionFactory connectionFactory) : IUserReposi
         const string sql = "DELETE FROM users WHERE id = @Id";
 
         await connection.ExecuteAsync(sql, new { Id = id });
+    }
+
+    public async Task UpdateResetCodeAsync(string email, string resetCode, DateTime expiry)
+    {
+        // 1. Create the connection
+        using var connection = connectionFactory.Create();
+
+        // 2. Define the SQL (PostgreSQL uses snake_case usually)
+        // Make sure 'reset_code' and 'reset_expiry' match your Supabase column names!
+        const string sql = @"
+        UPDATE users 
+        SET reset_code = @resetCode, 
+            reset_expiry = @expiry 
+        WHERE email = @email";
+
+        // 3. Execute the command
+        await connection.ExecuteAsync(sql, new
+        {
+            email,
+            resetCode,
+            expiry
+        });
     }
 }

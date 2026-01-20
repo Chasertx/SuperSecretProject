@@ -1,4 +1,4 @@
-namespace PortfolioPro.Models;
+namespace PortfolioPro.Core.Models;
 /**Model for login requests. **/
 public class LoginRequest
 {

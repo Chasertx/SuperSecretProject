@@ -1,4 +1,5 @@
-using PortfolioPro.Models;
+using System.ComponentModel.DataAnnotations;
+using PortfolioPro.Core.Models;
 /** Interface for managing user 
 data prior to processing or storage.
 **/
@@ -17,4 +18,6 @@ public interface IUserRepository
     Task UpdateUserAsync(User user);
 
     Task DeleteUserAsync(Guid id);
+
+    Task UpdateResetCodeAsync(string email, string resetCode, DateTime expiry);
 }

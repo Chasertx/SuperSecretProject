@@ -3,7 +3,7 @@ using Postgrest;
 /** Model for user profiles **/
 namespace PortfolioPro.Core.Models;
 
-using Postgrest.Models;     // For : BaseModel
+using Postgrest.Models;
 using Postgrest.Attributes;
 
 public class User : BaseModel
@@ -11,7 +11,7 @@ public class User : BaseModel
     [PrimaryKey("id", false)]
     public Guid Id { get; set; }
 
-    [Column("username")] // Check: Is your DB column 'username' or 'Username'?
+    [Column("username")]
     public string Username { get; set; } = string.Empty;
 
     [Column("email")]
@@ -20,7 +20,7 @@ public class User : BaseModel
     [Column("role")]
     public string Role { get; set; } = "User";
 
-    [Column("first_name")] // Postgres usually uses snake_case
+    [Column("first_name")]
     public string FirstName { get; set; } = string.Empty;
 
     [Column("last_name")]

@@ -2,8 +2,9 @@ using System.Net.Http.Headers;
 using PortfolioPro.Interfaces;
 
 namespace PortfolioPro.Services;
-
-// Note: Renamed 'apikey' to 'apiKey' for consistency and fixed 'httpClienet' typo
+/*Do you have a repository of memes
+you'd like to attach to your projects.
+I sure do and this lets me do it. */
 public class sbstorageService(IConfiguration configuration, IHttpClientFactory httpClientFactory) : IStorageService
 {
     public async Task<string> UploadImageAsync(IFormFile file)

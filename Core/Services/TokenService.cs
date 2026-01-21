@@ -6,7 +6,7 @@ using PortfolioPro.Interfaces;
 using PortfolioPro.Core.Models;
 
 namespace PortfolioPro.Services;
-/** ya can't touch this **/
+/** $ ya can't touch this $ **/
 public class TokenService(IConfiguration config) : ITokenService
 {
     public string CreateToken(User user)
@@ -19,7 +19,7 @@ public class TokenService(IConfiguration config) : ITokenService
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()) // This is what your POST reads
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
             };
 
         var tokenDescriptor = new SecurityTokenDescriptor

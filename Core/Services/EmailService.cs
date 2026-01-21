@@ -2,8 +2,10 @@ using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
 using Microsoft.Extensions.Configuration;
-using PortfolioPro.interfaces; // Unified namespace
-
+using PortfolioPro.interfaces;
+/* If you like sending emails with auto 
+generated codes boy howdy do I have 
+the thing for you. */
 namespace PortfolioPro.Core.Services;
 
 public class EmailService : IEmailService
@@ -38,7 +40,6 @@ public class EmailService : IEmailService
             var host = _config["EmailSettings:Host"];
             var port = int.Parse(_config["EmailSettings:Port"] ?? "587");
 
-            // Use SecureSocketOptions.Auto to handle both SSL and STARTTLS
             await smtp.ConnectAsync(host, port, SecureSocketOptions.StartTls);
 
             await smtp.AuthenticateAsync(

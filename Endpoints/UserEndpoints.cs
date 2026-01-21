@@ -5,8 +5,8 @@ using PortfolioPro.Interfaces;
 using PortfolioPro.interfaces;
 
 namespace PortfolioPro.Endpoints;
-/** This defines all api endpoints for
-managing user data. **/
+/** This is alot of stuff for messing
+with your user profile. **/
 public static class UserEndpoints
 {
     public static void MapUserEndpoints(this IEndpointRouteBuilder app)
@@ -35,26 +35,29 @@ public static class UserEndpoints
 
         group.MapPost("/login", async (LoginRequest login, IUserRepository repo, ITokenService tokenService) =>
             {
+                Console.WriteLine($"Login attempt for Username/Email: '{login.Username}'");
+
                 var user = await repo.GetUserByEmailAsync(login.Username);
 
-                if (user is null || !PasswordHasher.VerifyPassword(login.Password, user.Password))
+                if (user is null)
+                {
+                    Console.WriteLine("User NOT found in database.");
+                    return Results.Unauthorized();
+                }
+
+                Console.WriteLine($"User found. Database hash starts with: {user.Password.Substring(0, 5)}");
+
+
+                bool isPasswordValid = PasswordHasher.VerifyPassword(login.Password, user.Password);
+                Console.WriteLine($"Password verification result: {isPasswordValid}");
+
+                if (!isPasswordValid)
                 {
                     return Results.Unauthorized();
                 }
 
                 var token = tokenService.CreateToken(user);
-                return Results.Ok(new
-                {
-                    Message = "Login Successful",
-                    Token = token,
-                    User = new
-                    {
-                        user.Id,
-                        user.Username,
-                        user.Email,
-                        user.Role
-                    }
-                });
+                return Results.Ok(new { Message = "Login Successful", Token = token });
             });
 
 
@@ -102,5 +105,27 @@ public static class UserEndpoints
 
             return Results.Ok("Reset code sent.");
         });
+
+        group.MapPost("/reset-password", async (ResetPasswordRequest request, IUserRepository repo) =>
+        {
+            // 1. (Optional but recommended) Hash the new password!
+            // For now, we'll assume you have a hashing helper. 
+            // If not, use the same hashing logic you used during Signup.
+            var newHashedPassword = PasswordHasher.HashPassword(request.NewPassword);
+
+            // 2. Try to update the password
+            var success = await repo.ResetPasswordAsync(request.Email, request.Code, newHashedPassword);
+
+            if (!success)
+            {
+                return Results.BadRequest("Invalid code, expired, or incorrect email.");
+            }
+
+            return Results.Ok("Password has been reset successfully.");
+        });
+
+
     }
+
+    public record ResetPasswordRequest(string Email, string Code, string NewPassword);
 }

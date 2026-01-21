@@ -1,4 +1,4 @@
-namespace PortfolioPro.interfaces; // Match the Service's using statement
+namespace PortfolioPro.interfaces;
 
 public interface IEmailService
 {

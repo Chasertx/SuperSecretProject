@@ -5,9 +5,9 @@ using PortfolioPro.Core.Models;
 using PortfolioPro.Interfaces;
 
 namespace PortfolioPro.Repositories;
-/**This is where the definitions of
-all functionionality related to users
-and their endpoints are defined. **/
+/**BEHOLD! where I put all the stuff
+that can mess with your stuff. More to
+come. **/
 public class UserRepository(DbConnectionFactory connectionFactory) : IUserRepository
 {
     public async Task<User?> GetUserByIdAsync(Guid id)
@@ -80,11 +80,8 @@ public class UserRepository(DbConnectionFactory connectionFactory) : IUserReposi
 
     public async Task UpdateResetCodeAsync(string email, string resetCode, DateTime expiry)
     {
-        // 1. Create the connection
         using var connection = connectionFactory.Create();
 
-        // 2. Define the SQL (PostgreSQL uses snake_case usually)
-        // Make sure 'reset_code' and 'reset_expiry' match your Supabase column names!
         const string sql = @"
         UPDATE users 
         SET reset_code = @resetCode, 
@@ -98,5 +95,23 @@ public class UserRepository(DbConnectionFactory connectionFactory) : IUserReposi
             resetCode,
             expiry
         });
+    }
+
+    public async Task<bool> ResetPasswordAsync(string email, string code, string hashedPassword)
+    {
+        using var connection = connectionFactory.Create();
+
+        const string sql = @"
+            UPDATE users 
+            SET password = @hashedPassword, 
+                reset_code = NULL, 
+                reset_expiry = NULL 
+            WHERE email = @email 
+            AND reset_code = @code 
+            AND reset_expiry > CURRENT_TIMESTAMP";
+
+        var rowsAffected = await connection.ExecuteAsync(sql, new { email, code, hashedPassword });
+
+        return rowsAffected > 0;
     }
 }

@@ -7,16 +7,13 @@ namespace PortfolioPro.Endpoints;
 
 public static class ProjectEndpoints
 {
-    /// <summary>
-    /// This defines all api endpoints for managing project data. 
-    /// You can even add a picture of a wombat to your project 
-    /// since they're the coolest.
-    /// </summary>
+    /* This allows you to define endpoints
+    for all your projects. It doesn't have
+    everything yet. But its got STUFF. */
     public static void MapProjectEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/projects");
 
-        // --- GET Endpoints ---
         group.MapGet("/user/{userId:guid}", async (Guid userId, IProjectRepository repo) =>
         {
             var projects = await repo.GetProjectsByUserIdAsync(userId);

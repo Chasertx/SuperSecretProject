@@ -20,4 +20,6 @@ public interface IUserRepository
     Task DeleteUserAsync(Guid id);
 
     Task UpdateResetCodeAsync(string email, string resetCode, DateTime expiry);
+
+    Task<bool> ResetPasswordAsync(string email, string code, string hashedPassword);
 }

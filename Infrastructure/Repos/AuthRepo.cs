@@ -1,7 +1,8 @@
 using PortfolioPro.Core.Models;
 using Supabase;
-using Postgrest; // Required for filtering queries
+using Postgrest;
 
+/* Everyone likes an authenticated person. */
 namespace PortfolioPro.Repositories;
 
 public class AuthRepository : IAuthRepository
@@ -30,17 +31,14 @@ public class AuthRepository : IAuthRepository
 
     public async Task<bool> StoreResetCodeAsync(string email, string code)
     {
-        // 1. Specifically ask for a 'User' response
         var response = await _supabase.From<User>()
             .Where(x => x.Email == email)
             .Get();
 
-        // 2. Use 'Models.User?' to tell the compiler exactly what this variable is
         User? user = response.Model;
 
         if (user == null) return false;
 
-        // Now 'user' is guaranteed to be the User class from your Models
         user.ResetCode = code;
         user.ResetExpiry = DateTime.UtcNow.AddMinutes(15);
 
@@ -57,10 +55,8 @@ public class AuthRepository : IAuthRepository
 
         var user = response.Model;
 
-        // Check if user exists and code hasn't expired
         if (user == null || user.ResetExpiry < DateTime.UtcNow) return false;
 
-        // Update password and clear the reset code
         user.Password = BCrypt.Net.BCrypt.HashPassword(newPassword);
         user.ResetCode = null;
         user.ResetExpiry = null;

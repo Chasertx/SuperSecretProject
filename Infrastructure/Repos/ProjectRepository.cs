@@ -71,4 +71,31 @@ public class ProjectRepository(DbConnectionFactory connectionFactory) : IProject
 
         await connection.ExecuteAsync(sql, new { Id = id });
     }
+
+    public async Task<bool> SoftDeleteProjectAsync(Guid projectId, Guid userId)
+    {
+        using var connection = connectionFactory.Create();
+        const string sql = @"
+            UPDATE projects
+            SET deleted_at = CURRENT_TIMESTAMP
+            WHERE id = @projectId and user_id = @userId";
+
+        var rowsAffected = await connection.ExecuteAsync(sql, new { projectId, userId });
+        return rowsAffected > 0;
+    }
+
+
+    public async Task<IEnumerable<Project>> GetProjectsFromUserIdAsync(Guid userId)
+    {
+        using var connection = connectionFactory.Create();
+
+        const string sql = @"
+        SELECT * FROM projects
+        WHERE user_id = @userId
+        AND deleted_at is Null
+        ";
+
+        return await connection.QueryAsync<Project>(sql, new { userId });
+    }
+
 }

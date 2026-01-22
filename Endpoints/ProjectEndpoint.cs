@@ -69,14 +69,14 @@ public static class ProjectEndpoints
             return Results.Ok(projects);
         }).RequireAuthorization();
 
-        group.MapDelete("/{id:guid}", async (Guid id, IProjectRepository repo) =>
+        group.MapDelete("/{id:guid}", async (Guid id, IProjectRepository repo, HttpContext context) =>
         {
-            var project = await repo.GetProjectByIdAsync(id);
-            if (project is null)
-                return Results.NotFound(new { Message = "Project not found" });
+            var userIdClaim = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null) return Results.Unauthorized();
 
-            await repo.DeleteProjectAsync(id);
-            return Results.NoContent();
+            var success = await repo.SoftDeleteProjectAsync(id, Guid.Parse(userIdClaim));
+
+            return success ? Results.NoContent() : Results.NotFound("Project not found or already deleted.");
         })
         .RequireAuthorization();
     }

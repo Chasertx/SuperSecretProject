@@ -16,4 +16,7 @@ public interface IProjectRepository
     Task UpdateProjectAsync(Project project);
 
     Task DeleteProjectAsync(Guid id);
+
+    Task<bool> SoftDeleteProjectAsync(Guid projectId, Guid userId);
+
 }

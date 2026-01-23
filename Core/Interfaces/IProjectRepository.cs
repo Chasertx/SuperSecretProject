@@ -20,4 +20,6 @@ public interface IProjectRepository
     Task<bool> SoftDeleteProjectAsync(Guid projectId, Guid userId);
 
     Task<bool> RestoreProjectAsync(Guid projectId, Guid userId);
+
+    Task<IEnumerable<Project>> GetDeletedProjectsAsync(Guid userId);
 }

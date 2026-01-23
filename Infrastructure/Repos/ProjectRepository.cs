@@ -112,4 +112,16 @@ public class ProjectRepository(DbConnectionFactory connectionFactory) : IProject
         var rowsAffected = await connection.ExecuteAsync(sql, new { projectId, userId });
         return rowsAffected > 0;
     }
+
+    public async Task<IEnumerable<Project>> GetDeletedProjectsAsync(Guid userId)
+    {
+        const string sql = @"
+        SELECT * FROM projects
+        WHERE user_id = @userId
+        AND deleted_at IS NOT NULL
+        order by deleted_at DESC
+        ";
+
+        return await connectionFactory.Create().QueryAsync<Project>(sql, new { userId });
+    }
 }

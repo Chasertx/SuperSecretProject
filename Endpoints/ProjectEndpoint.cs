@@ -80,10 +80,20 @@ public static class ProjectEndpoints
         })
         .RequireAuthorization();
 
+        group.MapGet("/getDeleted", async (IProjectRepository repo, HttpContext context) =>
+        {
+            var userIdClaim = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null) return Results.Unauthorized();
+
+            var deletedProjects = await repo.GetDeletedProjectsAsync(Guid.Parse(userIdClaim));
+            return Results.Ok(deletedProjects);
+        });
+
         group.MapPatch("/{id:guid}/restore", async (Guid id, IProjectRepository repo, HttpContext context) =>
         {
             var userIdClaim = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (userIdClaim == null) return Results.Unauthorized();
+            Console.WriteLine($"TOKEN ID=========================================================: {userIdClaim}");
             var success = await repo.RestoreProjectAsync(id, Guid.Parse(userIdClaim));
 
             return success
@@ -91,5 +101,7 @@ public static class ProjectEndpoints
                 : Results.NotFound("Project not found or is not currently deleted.");
         })
         .RequireAuthorization();
+
+
     }
 }

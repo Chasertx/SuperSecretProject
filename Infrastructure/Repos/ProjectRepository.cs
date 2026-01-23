@@ -30,7 +30,8 @@ public class ProjectRepository(DbConnectionFactory connectionFactory) : IProject
         const string sql = @"
             SELECT id, user_id AS UserId, title, description, image_url AS ImageUrl, project_url AS ProjectUrl, created_at AS CreatedAt 
             FROM projects 
-            WHERE user_id = @UserId";
+            WHERE user_id = @UserId 
+            AND deleted_at IS NULL";
 
         return await connection.QueryAsync<Project>(sql, new { UserId = userId });
     }
@@ -98,4 +99,17 @@ public class ProjectRepository(DbConnectionFactory connectionFactory) : IProject
         return await connection.QueryAsync<Project>(sql, new { userId });
     }
 
+    public async Task<bool> RestoreProjectAsync(Guid projectId, Guid userId)
+    {
+        using var connection = connectionFactory.Create();
+        const string sql = @"
+        UPDATE projects
+        SET deleted_at = NULL
+        WHERE id = @projectId 
+        AND user_id = @userId 
+        AND deleted_at IS NOT NULL";
+
+        var rowsAffected = await connection.ExecuteAsync(sql, new { projectId, userId });
+        return rowsAffected > 0;
+    }
 }

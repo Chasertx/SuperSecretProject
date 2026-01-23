@@ -79,5 +79,17 @@ public static class ProjectEndpoints
             return success ? Results.NoContent() : Results.NotFound("Project not found or already deleted.");
         })
         .RequireAuthorization();
+
+        group.MapPatch("/{id:guid}/restore", async (Guid id, IProjectRepository repo, HttpContext context) =>
+        {
+            var userIdClaim = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null) return Results.Unauthorized();
+            var success = await repo.RestoreProjectAsync(id, Guid.Parse(userIdClaim));
+
+            return success
+                ? Results.Ok("Project successfully restored.")
+                : Results.NotFound("Project not found or is not currently deleted.");
+        })
+        .RequireAuthorization();
     }
 }

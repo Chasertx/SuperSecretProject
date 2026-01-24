@@ -17,49 +17,76 @@ information in it at some point. But you gotta treat
 it like biscuits and gravy and just savor the code
 for now <3**/
 
+// --- Dependency Injection Container ---
+
+// Register the DB factory as a singleton (one instance for the app's lifetime)
 builder.Services.AddSingleton<DbConnectionFactory>();
+
+// Register repositories and services with scoped lifetime (new instance per web request)
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
 builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddHttpClient();
 builder.Services.AddScoped<IStorageService, sbstorageService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
+// Register HttpClient for external API calls (like supabase storage)
+builder.Services.AddHttpClient();
+
+// --- Security & Authentication Configuration ---
+
+// Configure JWT Bearer authentication to protect our API routes
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
+            // Verify that the token was signed by our secret key.
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
+
+            // Ensure the token came from our server (Issuer) and is meant for our app (Audience). 
             ValidateIssuer = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidateAudience = true,
             ValidAudience = builder.Configuration["Jwt:Audience"],
+
+            // Reject tokens that have expired.
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero,
 
+            // Map standard JWT claims to .NET User Identities.
             NameClaimType = "nameid",
             RoleClaimType = "role"
         };
     });
 
+// Enable the Authorization middleware.
 builder.Services.AddAuthorization();
 
-
+// Automatically find and register all FluentValidation classes in the project.
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
+// Standardize error responses for the API
 builder.Services.AddProblemDetails();
 
 var app = builder.Build();
 
+// --- Middleware Pipeline ---
 
+// Enable the app to recognize WHO the user is based on the JWT
 app.UseAuthentication();
+
+// Enable the app to decide WHAT the user can do
 app.UseAuthorization();
 
+// --- Route Mapping ---
 
+// Register the minimal API endpoint groups we defined in our Endpoint files
 app.MapUserEndpoints();
 app.MapProjectEndpoints();
 
+// Root health-check endpoint
 app.MapGet("/", () => "PortfolioPro API is running smoothly.");
 
+// Start the web server.
 app.Run();

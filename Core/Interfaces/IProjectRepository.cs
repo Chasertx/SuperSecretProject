@@ -32,4 +32,10 @@ public interface IProjectRepository
     // Gets all projects in the user's trash bin.
     Task<IEnumerable<Project>> GetDeletedProjectsAsync(Guid userId);
 
+    // Gets the image url to ensure it's deleted from storage. 
+    Task<string?> GetImagePathAsync(Guid id, Guid userId);
+
+    // Permanently delete project from the database.
+    Task<bool> DeleteProjectAsync(Guid id, Guid userId);
+
 }

@@ -59,4 +59,41 @@ public class sbstorageService(IConfiguration configuration, IHttpClientFactory h
         // Constructs and returns the final public URL to view the image in a browser.
         return $"{supabaseUrl}/storage/v1/object/public/{bucket}/{fileName}";
     }
+
+    /// <summary>
+    /// For deleting the image from storage in the supabase bucket.
+    /// </summary>
+    /// <param name="imageUrl"></param>
+    /// <returns></returns>
+    public async Task DeleteImageAsync(string imageUrl)
+    {
+        // Retrieve Supabase configuration values from appsettings.json.
+        var supabaseUrl = configuration["Supabase:Url"];
+        var apiKey = configuration["Supabase:ApiKey"];
+        var bucket = configuration["Supabase:BucketName"];
+
+        // Define the URL segment that precedes the actual file path.
+        var identifier = $"/public/{bucket}/";
+        // Extract only the file name by splitting the full URL and taking the last part.
+        var fileName = imageUrl.Split(identifier).Last();
+        // Construct the internal API endpoint for object deletion.
+        var deleteUrl = $"{supabaseUrl}/storage/v1/object/{bucket}/{fileName}";
+        // Get a resilient HttpClient instance from the factory.
+        var httpClient = httpClientFactory.CreateClient();
+        // Initialize a new HTTP DELETE request for the specific file.
+        using var request = new HttpRequestMessage(HttpMethod.Delete, deleteUrl);
+        // Attach the required Supabase API key for authentication and routing.
+        request.Headers.Add("apikey", apiKey);
+        // Provide the bearer token to authorize the storage operation.
+        request.Headers.Add("Authorization", $"Bearer {apiKey}");
+        // Execute the deletion request asynchronously.
+        var response = await httpClient.SendAsync(request);
+
+        // Check if the deletion failed (e.g., file not found or unauthorized).
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Storage Delete Failed: {error}");
+        }
+    }
 }

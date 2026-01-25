@@ -2,6 +2,7 @@ using FluentValidation;
 using PortfolioPro.Core.Models;
 using PortfolioPro.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace PortfolioPro.Endpoints;
 
@@ -141,6 +142,39 @@ public static class ProjectEndpoints
                 : Results.NotFound("Project not found or is not currently deleted.");
         })
         .RequireAuthorization();
+
+        /// <summary>
+        /// Permanently deletes the a project from the repository.
+        /// </summary>
+        group.MapDelete("/{id:guid}/permanent", async (Guid id, IProjectRepository repo, IStorageService sb, ClaimsPrincipal User) =>
+        {
+            // Getting the identifier from the logged in user's claim
+            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+
+            // Getting the image path url 
+            var imageUrl = await repo.GetImagePathAsync(id, userId);
+
+            // Deleting the project 
+            var success = await repo.DeleteProjectAsync(id, userId);
+            if (!success) return Results.NotFound("Project not found or unauthorized.");
+
+            // Checks if an image url was found
+            if (!string.IsNullOrEmpty(imageUrl))
+            {
+                try
+                {
+                    // Deletes the image from the supabase bucket
+                    await sb.DeleteImageAsync(imageUrl);
+                }
+                catch (Exception ex)
+                {
+                    // Log error but don't fail the request since DB record is already gone
+                    Console.WriteLine($"Orphaned file alert: {imageUrl}. Error: {ex.Message}");
+                }
+            }
+
+            return Results.NoContent();
+        });
 
     }
 }

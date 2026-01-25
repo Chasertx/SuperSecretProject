@@ -181,4 +181,34 @@ public class ProjectRepository(DbConnectionFactory connectionFactory) : IProject
         // Create connection and query trashed items.
         return await connectionFactory.Create().QueryAsync<Project>(sql, new { userId });
     }
+
+    // Gets image_url path to ensure the image is deleted from storage.
+    public async Task<string?> GetImagePathAsync(Guid userId, Guid id)
+    {
+        // SQL to select the image_url from the projects table.
+        const string sql = @"select image_url from projects where user_id = @userId and id = @id";
+
+        // Establishes a connection to the database.
+        using var connection = connectionFactory.Create();
+
+        // Executes sql query on the database.
+        return await connection.QuerySingleOrDefaultAsync<string?>(sql, new { id, userId });
+    }
+
+    // Deletes the project permanently from the repository.
+    public async Task<bool> DeleteProjectAsync(Guid id, Guid userId)
+    {
+        // Deletes the intended project based on id and user id.
+        const string sql = @"DELETE FROM projects WHERE id = @id AND user_id = @userId";
+
+        // Establishest a connection.
+        using var connection = connectionFactory.Create();
+
+        // Uses that connection to execute our sql
+        var rowsAffected = await connection.ExecuteAsync(sql, new { id, userId });
+
+        // Checks if any rows were affected.
+        return rowsAffected > 0;
+    }
+
 }

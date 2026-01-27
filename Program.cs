@@ -23,6 +23,8 @@ for now <3**/
 builder.Services.AddSingleton<DbConnectionFactory>();
 
 // Register repositories and services with scoped lifetime (new instance per web request)
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
 builder.Services.AddScoped<ITokenService, TokenService>();
@@ -71,7 +73,12 @@ builder.Services.AddProblemDetails();
 
 var app = builder.Build();
 
-// --- Middleware Pipeline ---
+// Swagger
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(); // This creates the interactive webpage
+}
 
 // Enable the app to recognize WHO the user is based on the JWT
 app.UseAuthentication();

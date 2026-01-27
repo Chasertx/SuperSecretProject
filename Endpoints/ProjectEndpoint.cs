@@ -35,46 +35,38 @@ public static class ProjectEndpoints
         /// Retrieves a new project with an image upload.
         /// </summary>
         group.MapPost("/", async (
-            [FromForm] string title,
-            [FromForm] string description,
-            [FromForm] string? projectUrl,
-            [FromForm] IFormFile image,
+            [FromForm] ProjectUploadRequest request, // <--- One object instead of 4
             IStorageService storageService,
             IProjectRepository projectRepo,
             IValidator<Project> validator,
             HttpContext context) =>
         {
-            // Extract the authenticated user's ID from the JWT claims.
             var userIdClaim = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (userIdClaim == null) return Results.Unauthorized();
             var userId = Guid.Parse(userIdClaim);
 
-            // Upload the project image to cloud storage and get the URL
-            var imageUrl = await storageService.UploadImageAsync(image);
+            // Use request.Image
+            var imageUrl = await storageService.UploadImageAsync(request.Image);
 
-            // Map form data to the project model.
             var newProject = new Project
             {
                 Id = Guid.NewGuid(),
-                Title = title,
-                Description = description,
+                Title = request.Title,       // Use request.Title
+                Description = request.Description,
                 ImageUrl = imageUrl,
-                ProjectUrl = projectUrl,
+                ProjectUrl = request.ProjectUrl,
                 UserId = userId
             };
 
-            // Run FluentValidation rules against the new project object.
             var validationResult = await validator.ValidateAsync(newProject);
             if (!validationResult.IsValid)
                 return Results.ValidationProblem(validationResult.ToDictionary());
 
-            // Save the valid project to the database.
             await projectRepo.AddProjectAsync(newProject);
 
-            // Return 201 Created with the new project data.
             return Results.Created($"/api/projects/{newProject.Id}", newProject);
         })
-        .DisableAntiforgery() // Disabled for simple API form-data testing.
+        .DisableAntiforgery()
         .RequireAuthorization();
 
         /// <summary>

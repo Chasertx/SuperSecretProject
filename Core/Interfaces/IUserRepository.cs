@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using PortfolioPro.Core.Models;
+using System.Security.Claims;
 /** Interface for managing user 
 data prior to processing or storage.
 **/
@@ -17,7 +18,7 @@ public interface IUserRepository
     Task<IEnumerable<User>> GetAllUsersAsync();
 
     // Adds a new user to the database.
-    Task AddUserAsync(User user);
+    Task<Guid> AddUserAsync(User user);
 
     // Updates existing user information.
     Task UpdateUserAsync(User user);
@@ -30,4 +31,8 @@ public interface IUserRepository
 
     // Validates the reset code and updates the user's password.
     Task<bool> ResetPasswordAsync(string email, string code, string hashedPassword);
+
+    Task UpdateResumeUrlAsync(Guid userId, string url);
+
+    Guid GetUserId(ClaimsPrincipal user);
 }

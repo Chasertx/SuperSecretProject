@@ -1,176 +1,201 @@
 using FluentValidation;
 using PortfolioPro.Core.Models;
+using PortfolioPro.Core.DTOs;
 using PortfolioPro.Helpers;
 using PortfolioPro.Interfaces;
 using PortfolioPro.interfaces;
+using PortfolioPro;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Mvc;
 
 namespace PortfolioPro.Endpoints;
-/** This is alot of stuff for messing
-with your user profile. **/
 
-/// <summary>
-/// Configures and maps endpoints for user 
-/// account management, authentication,
-/// and security.
-/// </summary>
 public static class UserEndpoints
 {
-    /// <summary>
-    /// Registers user-related routes for the application.
-    /// </summary>
     public static void MapUserEndpoints(this IEndpointRouteBuilder app)
     {
-        // Groups all routs under the /api/users prefix.
         var group = app.MapGroup("/api/users");
 
-        /// <summary>
-        /// Registers a new user with a hashed password.
-        /// </summary>
-        group.MapPost("/register", async (User user, IUserRepository repo, IValidator<User> validator) =>
+        // --- REGISTER ---
+        group.MapPost("/register", async (UserRegisterDto request, IUserRepository repo, IValidator<UserRegisterDto> validator) =>
         {
-            // Validate user input against business rules.
-            var validationResult = await validator.ValidateAsync(user);
-            if (!validationResult.IsValid) return Results.ValidationProblem(validationResult.ToDictionary());
+            var validationResult = await validator.ValidateAsync(request);
+            if (!validationResult.IsValid)
+                return Results.ValidationProblem(validationResult.ToDictionary());
 
-            // Hash password before storage and generates unique ID.
-            user.Password = PasswordHasher.HashPassword(user.Password);
-            user.Id = Guid.NewGuid();
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                Username = request.Username,
+                Email = request.Email,
+                FirstName = request.FirstName,
+                LastName = request.LastName,
 
-            // Save user to database and returns profile (excluding password).
+                // Use the BCrypt helper we set up earlier
+                PasswordHash = PasswordHasher.HashPassword(request.Password),
+
+                Title = request.Title,
+                Bio = request.Bio,
+                YearsOfExperience = request.YearsOfExperience,
+                ProfileImageUrl = request.ProfileImageUrl,
+                ResumeUrl = request.ResumeUrl,
+                Tagline1 = request.Tagline1,
+                Tagline2 = request.Tagline2,
+                FrontendSkills = request.FrontendSkills,
+                BackendSkills = request.BackendSkills,
+                DatabaseSkills = request.DatabaseSkills,
+                InstagramLink = request.InstagramLink,
+                GitHubLink = request.GitHubLink,
+                LinkedInLink = request.LinkedInLink,
+                CreatedAt = DateTime.UtcNow
+            };
+
             await repo.AddUserAsync(user);
+
             return Results.Created($"/api/users/{user.Id}", new
             {
                 user.Id,
                 user.Username,
                 user.Email,
-                user.FirstName,
-                user.LastName,
-                user.Role
+                user.Title
             });
         });
 
-        /// <summary>
-        /// Authenticates a user and returns a JWT access token.
-        /// </summary>
+        // --- LOGIN ---
         group.MapPost("/login", async (LoginRequest login, IUserRepository repo, ITokenService tokenService) =>
+        {
+            var user = await repo.GetUserByEmailAsync(login.Email);
+
+            if (user is null) return Results.Unauthorized();
+
+            bool isPasswordValid = PasswordHasher.VerifyPassword(login.Password, user.PasswordHash);
+
+            if (!isPasswordValid) return Results.Unauthorized();
+
+            var token = tokenService.CreateToken(user);
+
+            // Return the token plus the basic info requested
+            return Results.Ok(new
             {
-                Console.WriteLine($"Login attempt for Username/Email: '{login.Username}'");
-
-                // Find user by their provided email/username.
-                var user = await repo.GetUserByEmailAsync(login.Username);
-
-                // Fail if user does not exist.
-                if (user is null)
+                Message = "Login Successful",
+                Token = token,
+                User = new
                 {
-                    Console.WriteLine("User NOT found in database.");
-                    return Results.Unauthorized();
+                    user.Id,
+                    user.FirstName,
+                    user.LastName,
+                    user.Email,
+                    user.Username,
+                    user.Role // Added role too, as it's usually needed for frontend routing
                 }
-
-                Console.WriteLine($"User found. Database hash starts with: {user.Password.Substring(0, 5)}");
-
-                // Check if the provided password matches the stored hash.
-                bool isPasswordValid = PasswordHasher.VerifyPassword(login.Password, user.Password);
-                Console.WriteLine($"Password verification result: {isPasswordValid}");
-
-                // Fail if password doesn't match.
-                if (!isPasswordValid)
-                {
-                    return Results.Unauthorized();
-                }
-
-                // Generate and return security token for valid credentials
-                var token = tokenService.CreateToken(user);
-                return Results.Ok(new { Message = "Login Successful", Token = token });
             });
-
-
-        /// <summary>
-        /// Retrieves a list of all registered users.
-        /// </summary>
+        });
+        // --- GET ALL ---
         group.MapGet("/", async (IUserRepository repo) =>
         {
-            // Fetch all records (Authorization required).
-            return Results.Ok(await repo.GetAllUsersAsync());
-        }).RequireAuthorization();
+            var users = await repo.GetAllUsersAsync();
 
-        /// <summary>
-        /// Gets a specific user by their unique ID.
-        /// </summary>
+            // Transform the 'User' models into 'UserCardDto' objects
+            var userCards = users.Select(u => new UserCardDto
+            {
+                Id = u.Id,
+                Username = u.Username,
+                FirstName = u.FirstName,
+                LastName = u.LastName,
+                Title = u.Title,
+                Bio = u.Bio,
+                ProfileImageUrl = u.ProfileImageUrl,
+                FrontendSkills = u.FrontendSkills,
+                BackendSkills = u.BackendSkills
+            });
+
+            return Results.Ok(userCards);
+        });
+
+        // --- GET BY ID ---
         group.MapGet("/{id:guid}", async (Guid id, IUserRepository repo) =>
         {
-            // Attempt to find the user in the database
             var user = await repo.GetUserByIdAsync(id);
-
-            // Return 200 if found, else 404 not found.
             return user is not null ? Results.Ok(user) : Results.NotFound();
         }).RequireAuthorization();
 
-        /// <summary>
-        /// Deletes a user account from the system.
-        /// </summary>
+        // --- DELETE ---
         group.MapDelete("/{id:guid}", async (Guid id, IUserRepository repo) =>
         {
-            // Check for user existence before attempting the delete.
             var user = await repo.GetUserByIdAsync(id);
             if (user is null) return Results.NotFound();
 
-            // Perform permanent deletion.
             await repo.DeleteUserAsync(id);
             return Results.NoContent();
         }).RequireAuthorization();
 
-        /// <summary>
-        /// Triggers the password reset process by send a code to the user's email.
-        /// </summary>
+        // --- FORGOT PASSWORD ---
         group.MapPost("/forgot-password", async (string email, IUserRepository repo, IEmailService emailService) =>
         {
-            // Search for user by email.
             var user = await repo.GetUserByEmailAsync(email);
-
-            // Hide account existence to preven user enumeration.
             if (user == null) return Results.Ok("If an account exists, a code was sent.");
 
-            // Generates a random 6 digit numeric reset code.
             var resetCode = new Random().Next(100000, 999999).ToString();
-            // Set code expiry time for 15 minutes
             var expiry = DateTime.UtcNow.AddMinutes(15);
 
-            // Persist the reset code and expiry to the user record.
             await repo.UpdateResetCodeAsync(email, resetCode, expiry);
 
-            // Dispatch the email containing the reset code.
-            await emailService.SendEmailAsync(
-                email,
-                "Password Reset",
-                $"Your code is {resetCode}"
-            );
+            await emailService.SendEmailAsync(email, "Password Reset", $"Your code is {resetCode}");
 
             return Results.Ok("Reset code sent.");
         });
 
-        /// <summary>
-        /// Validates a reset code and updates the user's password.
-        /// </summary>
+        // --- RESET PASSWORD ---
         group.MapPost("/reset-password", async (ResetPasswordRequest request, IUserRepository repo) =>
         {
-            // Hash the new password for secure storage.
             var newHashedPassword = PasswordHasher.HashPassword(request.NewPassword);
-
-            // Validate code and update database in one operation.
             var success = await repo.ResetPasswordAsync(request.Email, request.Code, newHashedPassword);
 
-            // Handle invalid or expired codes.
-            if (!success)
-            {
-                return Results.BadRequest("Invalid code, expired, or incorrect email.");
-            }
+            if (!success) return Results.BadRequest("Invalid code, expired, or incorrect email.");
 
             return Results.Ok("Password has been reset successfully.");
         });
 
+        group.MapPost("/upload-resume", async (IFormFile file,
+            ClaimsPrincipal user,
+            [FromServices] IUserRepository repo,
+            [FromServices] Supabase.Client supabase) =>
+        {
+            var userId = repo.GetUserId(user);
+            if (userId == Guid.Empty) return Results.Unauthorized();
 
+            if (!user.IsInRole("King"))
+            {
+                Console.WriteLine("NOT THE KING");
+                return Results.Forbid(); // Returns 403 Forbidden
+            }
+
+            if (file == null || file.Length == 0) return Results.BadRequest("No file uploaded.");
+
+            // 1. Create a unique filename
+            var fileName = $"{Guid.NewGuid()}_{file.FileName}";
+
+            using var stream = file.OpenReadStream();
+            var memoryStream = new MemoryStream();
+            await stream.CopyToAsync(memoryStream);
+            var fileData = memoryStream.ToArray();
+
+            // 2. Upload to Supabase Storage Bucket 'resumes'
+            await supabase.Storage
+                    .From("resumes")
+                    .Upload(fileData, fileName, new Supabase.Storage.FileOptions { Upsert = true });
+
+            // 3. Get the Public URL
+            var publicUrl = supabase.Storage.From("resumes").GetPublicUrl(fileName);
+
+            await repo.UpdateResumeUrlAsync(userId, publicUrl);
+
+            return Results.Ok(new { Url = publicUrl });
+        }).RequireAuthorization()
+        .DisableAntiforgery(); // Required for minimal API file uploads in some setups
     }
 
-    // Helper record for the password reset payload.
-    public record ResetPasswordRequest(string Email, string Code, string NewPassword);
 }
+
+// Global record for payloads
+public record ResetPasswordRequest(string Email, string Code, string NewPassword);

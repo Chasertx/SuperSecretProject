@@ -3,6 +3,7 @@ using Dapper;
 using PortfolioPro.Data;
 using PortfolioPro.Core.Models;
 using PortfolioPro.Interfaces;
+using System.Security.Claims;
 
 namespace PortfolioPro.Repositories;
 /**BEHOLD! where I put all the stuff
@@ -39,11 +40,33 @@ public class UserRepository(DbConnectionFactory connectionFactory) : IUserReposi
     public async Task<User?> GetUserByEmailAsync(string email)
     {
         using var connection = connectionFactory.Create();
+
         const string sql = @"
-            SELECT id, username, email, role, created_at AS CreatedAt, 
-                   first_name AS FirstName, last_name AS LastName, password AS Password 
-            FROM users 
-            WHERE email = @Email";
+    SELECT 
+        id, 
+        username, 
+        role, 
+        first_name AS FirstName, 
+        last_name AS LastName, 
+        email, 
+        password AS PasswordHash, -- This is the fix! Pointing 'password' to 'PasswordHash'
+        reset_code AS ResetCode, 
+        reset_expiry AS ResetExpiry,
+        ""ProfileImageUrl"" AS ProfileImageUrl, 
+        ""FrontendSkills"" AS FrontendSkills, 
+        ""BackendSkills"" AS BackendSkills, 
+        ""DatabaseSkills"" AS DatabaseSkills, 
+        ""Bio"" AS Bio, 
+        ""Title"" AS Title, 
+        ""Tagline1"" AS Tagline1, 
+        ""Tagline2"" AS Tagline2, 
+        instagram_link AS InstagramLink, 
+        ""GitHubLink"" AS GitHubLink, 
+        linkedin_link AS LinkedinLink, 
+        ""ResumeUrl"" AS ResumeUrl, 
+        ""YearsOfExperience"" AS YearsOfExperience
+    FROM users 
+    WHERE email = @Email";
 
         return await connection.QueryFirstOrDefaultAsync<User>(sql, new { Email = email });
     }
@@ -55,28 +78,59 @@ public class UserRepository(DbConnectionFactory connectionFactory) : IUserReposi
     public async Task<IEnumerable<User>> GetAllUsersAsync()
     {
         using var connection = connectionFactory.Create();
-        const string sql = @"
-            SELECT id, username, email, role, created_at AS CreatedAt, 
-                   first_name AS FirstName, last_name AS LastName, password AS Password 
-            FROM users";
 
-        // Returns a full collection of user objects.
+        // We alias the snake_case and Quoted PascalCase columns 
+        // to match your C# User.cs property names.
+        const string sql = @"
+        SELECT 
+            id, 
+            username, 
+            email, 
+            role, 
+            created_at AS CreatedAt, 
+            first_name AS FirstName, 
+            last_name AS LastName,
+            ""ProfileImageUrl"" AS ProfileImageUrl,
+            ""Title"" AS Title,
+            ""Bio"" AS Bio,
+            ""FrontendSkills"" AS FrontendSkills,
+            ""BackendSkills"" AS BackendSkills,
+            ""Tagline1"" AS Tagline1
+        FROM users 
+        ORDER BY created_at DESC";
+
         return await connection.QueryAsync<User>(sql);
     }
 
     /// <summary>
     /// Creates a new user record in the database.
     /// </summary>
-    public async Task AddUserAsync(User user)
+    public async Task<Guid> AddUserAsync(User user)
     {
         using var connection = connectionFactory.Create();
 
-        // Map C# object properties to SQL insert parameters.
         const string sql = @"
-            INSERT INTO users (id, username, email, role, created_at, first_name, last_name, password) 
-            VALUES (@Id, @Username, @Email, @Role, @CreatedAt, @FirstName, @LastName, @Password)";
+        INSERT INTO users (
+            id, username, role, created_at, first_name, last_name, 
+            email, password, reset_code, reset_expiry,
+            ""ProfileImageUrl"", ""FrontendSkills"", ""BackendSkills"", ""DatabaseSkills"", 
+            ""Bio"", ""Title"", ""Tagline1"", ""Tagline2"", 
+            instagram_link, ""GitHubLink"", linkedin_link, ""ResumeUrl"", 
+            ""YearsOfExperience""
+        ) 
+        VALUES (
+            @Id, @Username, @Role, @CreatedAt, @FirstName, @LastName, 
+            @Email, @PasswordHash, @ResetCode, @ResetExpiry,
+            @ProfileImageUrl, @FrontendSkills, @BackendSkills, @DatabaseSkills, 
+            @Bio, @Title, @Tagline1, @Tagline2, 
+            @InstagramLink, @GitHubLink, @LinkedinLink, @ResumeUrl, 
+            @YearsOfExperience
+        ) 
+        RETURNING id;";
 
-        await connection.ExecuteAsync(sql, user);
+        // Dapper maps your C# 'PasswordHash' property to the '@PasswordHash' 
+        // parameter, which inserts into the 'password' column.
+        return await connection.ExecuteScalarAsync<Guid>(sql, user);
     }
 
     /// <summary>
@@ -157,4 +211,30 @@ public class UserRepository(DbConnectionFactory connectionFactory) : IUserReposi
 
         return rowsAffected > 0;
     }
+
+    public async Task UpdateResumeUrlAsync(Guid userId, string url)
+    {
+        using var connection = connectionFactory.Create();
+        const string sql = @"
+        UPDATE users 
+        SET ""ResumeUrl"" = @Url 
+        WHERE id = @UserId";
+
+        await connection.ExecuteAsync(sql, new { UserId = userId, Url = url });
+    }
+
+    public Guid GetUserId(ClaimsPrincipal user)
+    {
+        // Look for the NameIdentifier claim (standard for IDs)
+        var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                          ?? user.FindFirst("sub")?.Value;
+
+        if (Guid.TryParse(userIdClaim, out var userId))
+        {
+            return userId;
+        }
+
+        return Guid.Empty;
+    }
+
 }

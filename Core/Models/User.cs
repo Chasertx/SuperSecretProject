@@ -1,50 +1,84 @@
-using System.Text.Json.Serialization;
-using Postgrest;
-/** Model for user profiles **/
-namespace PortfolioPro.Core.Models;
-
 using Postgrest.Models;
 using Postgrest.Attributes;
 
+namespace PortfolioPro.Core.Models;
+
+[Table("Users")]
 public class User : BaseModel
 {
-    // Unique id and primary key for the user.
-    [PrimaryKey("id", false)]
+    [PrimaryKey("Id", false)]
     public Guid Id { get; set; }
 
-    // Unique display name for the user.
-    [Column("username")]
+    [Column("Username")]
     public string Username { get; set; } = string.Empty;
 
-    // Email address to be harvested and sold to data brokers.
-    [Column("email")]
+    [Column("Email")]
     public string Email { get; set; } = string.Empty;
 
-    // Security level, determines permissions.
-    [Column("role")]
-    public string Role { get; set; } = "User";
+    [Column("Role")]
+    public string Role { get; set; } = string.Empty;
 
-    // User's name.
-    [Column("first_name")]
-    public string FirstName { get; set; } = string.Empty;
+    [Column("PasswordHash")]
+    public string PasswordHash { get; set; } = string.Empty;
 
-    // User's last name.
-    [Column("last_name")]
-    public string LastName { get; set; } = string.Empty;
-
-    // Hashed version of user's password.
-    [Column("password")]
+    [Column("Password")]
     public string Password { get; set; } = string.Empty;
 
-    // Reset code for password recovery.
-    [Column("reset_code")]
+    [Column("FirstName")]
+    public string? FirstName { get; set; }
+
+    [Column("LastName")]
+    public string? LastName { get; set; }
+
+    // --- Professional Profile ---
+    [Column("Title")]
+    public string? Title { get; set; }
+
+    [Column("Bio")]
+    public string? Bio { get; set; }
+
+    [Column("YearsOfExperience")]
+    public int YearsOfExperience { get; set; }
+
+    [Column("ProfileImageUrl")]
+    public string? ProfileImageUrl { get; set; }
+
+    [Column("ResumeUrl")]
+    public string? ResumeUrl { get; set; }
+
+    // --- Branding & Skills ---
+    [Column("Tagline1")]
+    public string? Tagline1 { get; set; }
+
+    [Column("Tagline2")]
+    public string? Tagline2 { get; set; }
+
+    [Column("FrontendSkills")]
+    public string? FrontendSkills { get; set; }
+
+    [Column("BackendSkills")]
+    public string? BackendSkills { get; set; }
+
+    [Column("DatabaseSkills")]
+    public string? DatabaseSkills { get; set; }
+
+    // --- Socials ---
+    [Column("InstagramLink")]
+    public string? InstagramLink { get; set; }
+
+    [Column("GitHubLink")]
+    public string? GitHubLink { get; set; }
+
+    [Column("LinkedInLink")]
+    public string? LinkedInLink { get; set; }
+
+    // --- Auth Infrastructure (Required by AuthRepo) ---
+    [Column("ResetCode")]
     public string? ResetCode { get; set; }
 
-    // Expiration time for the reset code.
-    [Column("reset_expiry")]
+    [Column("ResetExpiry")]
     public DateTime? ResetExpiry { get; set; }
 
-    // Timestamp of when the user was created.
-    [Column("created_at")]
+    [Column("CreatedAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

@@ -31,7 +31,8 @@ public class TokenService(IConfiguration config) : ITokenService
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()), // Subject claim (Unique ID).
                 new Claim(JwtRegisteredClaimNames.Email, user.Email), // Email claim.
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()) // Standard .NET name identifier.
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), // Standard .NET name identifier.
+                new Claim(ClaimTypes.Role, user.Role)
             };
 
         // Configures the token's properties including identity, expiration, and security credentials.

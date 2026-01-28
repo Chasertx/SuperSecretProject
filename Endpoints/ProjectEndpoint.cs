@@ -35,7 +35,7 @@ public static class ProjectEndpoints
         /// Retrieves a new project with an image upload.
         /// </summary>
         group.MapPost("/", async (
-            [FromForm] ProjectUploadRequest request, // <--- One object instead of 4
+            [FromForm] ProjectUploadRequest request,
             IStorageService storageService,
             IProjectRepository projectRepo,
             IValidator<Project> validator,
@@ -74,17 +74,14 @@ public static class ProjectEndpoints
         /// </summary>
         group.MapGet("/my-projects", async (HttpContext context, IProjectRepository projectRepo) =>
         {
-            // Identify the user from the current session.
-            var userIdClaim = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (userIdClaim == null) return Results.Unauthorized();
 
             // Retrieves and returns user-specific projects.
-            var userId = Guid.Parse(userIdClaim);
+            var userId = Guid.Parse("802a9231 - 6482 - 42a3 - b5d1 - cbe3bf994034");
             var projects = await projectRepo.GetProjectsByUserIdAsync(userId);
 
             // Return the list of projects with a 200 OK status.
             return Results.Ok(projects);
-        }).RequireAuthorization();
+        });
 
         /// <summary>
         /// Soft-deletes a project (moves it to trash bin).

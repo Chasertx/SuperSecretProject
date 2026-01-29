@@ -247,33 +247,36 @@ public static class UserEndpoints
             });
         });
 
-        group.MapPost("/king/upload-asset", async (
-                    [FromForm(Name = "file")] IFormFile file,
-                    [FromForm(Name = "bucketName")] string bucketName,
-                    IUserRepository repo) =>
-        {
-            // The binder handles the 'Required' check, but a manual null check is safe
-            if (file == null || string.IsNullOrEmpty(bucketName))
-                return Results.BadRequest("Both 'file' and 'bucketName' are required in the form.");
+        group.MapPost("/king/upload-asset", async (HttpRequest request, IUserRepository repo) =>
+{
+    // 1. Check if the request is actually a form
+    if (!request.HasFormContentType) 
+        return Results.Extensions.BadRequest("Invalid content type. Expected multipart/form-data.");
 
-            try
-            {
-                // 1. Get the URL from Supabase
-                var url = await repo.GetSupabaseUrlAsync(file, bucketName);
+    // 2. Read the form manually (Bypasses the strict 415 binder)
+    var form = await request.ReadFormAsync();
+    var file = form.Files.GetFile("file");
+    var bucketName = form["bucketName"].ToString();
 
-                // 2. Update the Database for the King role
-                var success = await repo.UpdateKingAssetUrlAsync(bucketName, url);
+    if (file == null || string.IsNullOrEmpty(bucketName))
+        return Results.BadRequest("File or BucketName missing from request.");
 
-                return success
-                    ? Results.Ok(new { url, message = $"Successfully saved to {bucketName}" })
-                    : Results.Problem("File uploaded, but database record update failed.");
-            }
-            catch (Exception ex)
-            {
-                return Results.Problem($"Upload Process Failed: {ex.Message}");
-            }
-        })
-        .DisableAntiforgery();
+    try
+    {
+        // 3. Call your existing storage logic
+        var url = await repo.UploadImageAsync(file, bucketName);
+        var success = await repo.UpdateKingAssetUrlAsync(bucketName, url);
+
+        return success 
+            ? Results.Ok(new { url }) 
+            : Results.Problem("Database update failed");
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+})
+.DisableAntiforgery();
     }
 
 }

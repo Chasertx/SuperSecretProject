@@ -114,7 +114,7 @@ app.MapUserEndpoints();
 app.MapProjectEndpoints();
 
 // Root health-check endpoint
-app.MapGet("/", () => "PortfolioPro API is running smoothly.");
+app.MapGet("/", () => "PortfolioPro API is running smoothly .");
 
 // Start the web server.
 app.Run();

@@ -39,4 +39,8 @@ public interface IUserRepository
     Task<bool> UpdateUserProfileAsync(User user);
 
     Task<User?> GetUserByRoleAsync(string role);
+
+    Task<bool> UpdateKingAssetUrlAsync(string bucketName, string url);
+
+    Task<string> GetSupabaseUrlAsync(IFormFile file, string bucketName);
 }

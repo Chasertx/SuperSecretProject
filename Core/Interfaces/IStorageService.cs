@@ -9,6 +9,8 @@ public interface IStorageService
     /// </summary>
     /// <param name="file">Data stream sent from the browser.</param>
     /// <returns></returns>
+    Task<string> UploadImageAsync(IFormFile file, string bucketName);
+
     Task<string> UploadImageAsync(IFormFile file);
     /// <summary>
     /// For deleting the image from the storage repo.

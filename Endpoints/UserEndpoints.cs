@@ -246,6 +246,34 @@ public static class UserEndpoints
                 email = king.Email
             });
         });
+
+        group.MapPost("/king/upload-asset", async (
+                    [FromForm(Name = "file")] IFormFile file,
+                    [FromForm(Name = "bucketName")] string bucketName,
+                    IUserRepository repo) =>
+        {
+            // The binder handles the 'Required' check, but a manual null check is safe
+            if (file == null || string.IsNullOrEmpty(bucketName))
+                return Results.BadRequest("Both 'file' and 'bucketName' are required in the form.");
+
+            try
+            {
+                // 1. Get the URL from Supabase
+                var url = await repo.GetSupabaseUrlAsync(file, bucketName);
+
+                // 2. Update the Database for the King role
+                var success = await repo.UpdateKingAssetUrlAsync(bucketName, url);
+
+                return success
+                    ? Results.Ok(new { url, message = $"Successfully saved to {bucketName}" })
+                    : Results.Problem("File uploaded, but database record update failed.");
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem($"Upload Process Failed: {ex.Message}");
+            }
+        })
+        .DisableAntiforgery();
     }
 
 }

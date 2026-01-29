@@ -4,6 +4,7 @@ using PortfolioPro.Data;
 using PortfolioPro.Core.Models;
 using PortfolioPro.Interfaces;
 using System.Security.Claims;
+using PortfolioPro.Services;
 
 namespace PortfolioPro.Repositories;
 /**BEHOLD! where I put all the stuff
@@ -13,7 +14,7 @@ come. **/
 /// <summary>
 /// Manages user profile data and security credentials within the PostgreSQL database.
 /// </summary>
-public class UserRepository(DbConnectionFactory connectionFactory) : IUserRepository
+public class UserRepository(DbConnectionFactory connectionFactory, IStorageService storageService) : IUserRepository
 {
     /// <summary>
     /// Finds a user by their unique identifier.
@@ -290,6 +291,31 @@ public class UserRepository(DbConnectionFactory connectionFactory) : IUserReposi
         return Guid.Empty;
     }
 
+    public async Task<string> GetSupabaseUrlAsync(IFormFile file, string bucketName)
+    {
+        return await storageService.UploadImageAsync(file, bucketName);
+    }
+
+    public async Task<bool> UpdateKingAssetUrlAsync(string bucketName, string url)
+    {
+        using var connection = connectionFactory.Create();
+
+        string column = bucketName.ToLower() switch
+        {
+            "portfoliophoto" => @"""ProfileImageUrl""",
+            "resumes" => @"""ResumeUrl""",
+            _ => throw new ArgumentException("Invalid asset type")
+        };
+
+        string sql = $@"
+        UPDATE users 
+        SET {column} = @Url 
+        WHERE role = 'King'";
+
+        var rowsAffected = await connection.ExecuteAsync(sql, new { Url = url });
+        return rowsAffected > 0;
+    }
+
 
     public async Task<User?> GetUserByRoleAsync(string role)
     {
@@ -321,11 +347,8 @@ public class UserRepository(DbConnectionFactory connectionFactory) : IUserReposi
             Email = dictionary["email"]?.ToString() ?? "",
             Role = dictionary["role"]?.ToString() ?? "",
 
-            // Use the exact database column names (lowercase)
             FirstName = dictionary["first_name"]?.ToString(),
             LastName = dictionary["last_name"]?.ToString(),
-
-            // Quoted columns usually maintain their case in the dictionary
             Title = dictionary["Title"]?.ToString(),
             Bio = dictionary["Bio"]?.ToString(),
             Tagline1 = dictionary["Tagline1"]?.ToString(),
@@ -342,6 +365,8 @@ public class UserRepository(DbConnectionFactory connectionFactory) : IUserReposi
             BackendSkills = MapArray(dictionary["BackendSkills"]),
             DatabaseSkills = MapArray(dictionary["DatabaseSkills"])
         };
+
+
     }
 
     string[] MapArray(object? val)

@@ -217,6 +217,21 @@ public static class UserEndpoints
                 : Results.BadRequest("Could not update profile.");
         })
         .RequireAuthorization();
+
+        group.MapGet("/profile/king", async (IUserRepository repo) =>
+        {
+            var users = await repo.GetAllUsersAsync();
+
+            var kingUser = users.FirstOrDefault(u =>
+                u.Role.Equals("King", StringComparison.OrdinalIgnoreCase));
+
+            if (kingUser == null)
+            {
+                return Results.NotFound(new { Message = "The King profile has not been initialized." });
+            }
+
+            return Results.Ok(kingUser);
+        });
     }
 
 }

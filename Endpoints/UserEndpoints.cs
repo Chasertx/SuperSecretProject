@@ -220,16 +220,31 @@ public static class UserEndpoints
 
         group.MapGet("/profile/king", async (IUserRepository repo) =>
         {
-            var users = await repo.GetAllUsersAsync();
+            var king = await repo.GetUserByRoleAsync("King");
 
-            var kingUser = repo.GetUserByRoleAsync("King");
-
-            if (kingUser == null)
+            if (king == null)
             {
                 return Results.NotFound(new { Message = "The King profile has not been initialized." });
             }
 
-            return Results.Ok(kingUser);
+            return Results.Ok(new
+            {
+                id = king.Id,
+                username = king.Username,
+                firstName = king.FirstName,
+                lastName = king.LastName,
+                title = king.Title,
+                bio = king.Bio,
+                tagline1 = king.Tagline1,
+                tagline2 = king.Tagline2,
+                yearsOfExperience = king.YearsOfExperience,
+                frontendSkills = king.FrontendSkills,
+                backendSkills = king.BackendSkills,
+                databaseSkills = king.DatabaseSkills,
+                profileImageUrl = king.ProfileImageUrl,
+                resumeUrl = king.ResumeUrl,
+                email = king.Email
+            });
         });
     }
 

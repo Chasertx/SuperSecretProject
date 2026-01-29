@@ -222,8 +222,7 @@ public static class UserEndpoints
         {
             var users = await repo.GetAllUsersAsync();
 
-            var kingUser = users.FirstOrDefault(u =>
-                u.Role.Equals("King", StringComparison.OrdinalIgnoreCase));
+            var kingUser = repo.GetUserByRoleAsync("King");
 
             if (kingUser == null)
             {

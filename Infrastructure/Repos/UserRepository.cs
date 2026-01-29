@@ -290,4 +290,17 @@ public class UserRepository(DbConnectionFactory connectionFactory) : IUserReposi
         return Guid.Empty;
     }
 
+
+    public async Task<User?> GetUserByRoleAsync(string role)
+    {
+        using var connection = connectionFactory.Create();
+        string sql = "SELECT * FROM users WHERE role = @Role LIMIT 1";
+
+
+        var result = await connection.QueryFirstOrDefaultAsync<User>(sql, new { Role = role });
+
+        return result;
+
+    }
+
 }

@@ -294,13 +294,75 @@ public class UserRepository(DbConnectionFactory connectionFactory) : IUserReposi
     public async Task<User?> GetUserByRoleAsync(string role)
     {
         using var connection = connectionFactory.Create();
-        string sql = "SELECT * FROM users WHERE role = @Role LIMIT 1";
 
+        string sql = @"
+        SELECT 
+            id, username, email, role, 
+            first_name, 
+            last_name, 
+            ""Title"", ""Bio"", ""Tagline1"", ""Tagline2"",
+            ""YearsOfExperience"", ""ProfileImageUrl"", ""ResumeUrl"",
+            ""FrontendSkills"", ""BackendSkills"", ""DatabaseSkills"",
+            ""GitHubLink"", instagram_link, linkedin_link
+        FROM users 
+        WHERE role = @Role LIMIT 1";
 
-        var result = await connection.QueryFirstOrDefaultAsync<User>(sql, new { Role = role });
+        var row = await connection.QueryFirstOrDefaultAsync<dynamic>(sql, new { Role = role });
 
-        return result;
+        if (row == null) return null;
 
+        var dictionary = (IDictionary<string, object>)row;
+        Console.WriteLine("Available Dictionary Keys: " + string.Join(", ", dictionary.Keys));
+        Console.WriteLine("Available Dictionary Keys: " + string.Join(", ", dictionary["FrontendSkills"]));
+        return new User
+        {
+            Id = dictionary.ContainsKey("id") ? (Guid)dictionary["id"] : Guid.Empty,
+            Username = dictionary["username"]?.ToString() ?? "",
+            Email = dictionary["email"]?.ToString() ?? "",
+            Role = dictionary["role"]?.ToString() ?? "",
+
+            // Use the exact database column names (lowercase)
+            FirstName = dictionary["first_name"]?.ToString(),
+            LastName = dictionary["last_name"]?.ToString(),
+
+            // Quoted columns usually maintain their case in the dictionary
+            Title = dictionary["Title"]?.ToString(),
+            Bio = dictionary["Bio"]?.ToString(),
+            Tagline1 = dictionary["Tagline1"]?.ToString(),
+            Tagline2 = dictionary["Tagline2"]?.ToString(),
+            YearsOfExperience = dictionary.ContainsKey("YearsOfExperience") ? Convert.ToInt32(dictionary["YearsOfExperience"]) : 0,
+            ProfileImageUrl = dictionary["ProfileImageUrl"]?.ToString(),
+            ResumeUrl = dictionary["ResumeUrl"]?.ToString(),
+            GitHubLink = dictionary["GitHubLink"]?.ToString(),
+            InstagramLink = dictionary["instagram_link"]?.ToString(),
+            LinkedInLink = dictionary["linkedin_link"]?.ToString(),
+
+            // The "Bulletproof" Array Cast
+            FrontendSkills = MapArray(dictionary["FrontendSkills"]),
+            BackendSkills = MapArray(dictionary["BackendSkills"]),
+            DatabaseSkills = MapArray(dictionary["DatabaseSkills"])
+        };
     }
 
+    string[] MapArray(object? val)
+    {
+        if (val == null) return Array.Empty<string>();
+
+        // If it's already a proper collection, use it
+        if (val is string[] s) return s;
+        if (val is IEnumerable<string> e) return e.ToArray();
+
+        // If it's a string like: {React,Next.js,"Tailwind CSS"}
+        var str = val.ToString()?.Trim();
+        if (!string.IsNullOrEmpty(str) && str.StartsWith("{") && str.EndsWith("}"))
+        {
+            return str.Trim('{', '}')
+                      .Split(',')
+                      .Select(x => x.Trim('"')) // Remove quotes from "Tailwind CSS"
+                      .ToArray();
+        }
+
+        return Array.Empty<string>();
+    }
 }
+

@@ -49,6 +49,7 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 
 // Register HttpClient for external API calls (like supabase storage)
 builder.Services.AddHttpClient();
+builder.Services.AddAntiforgery();
 
 // --- Security & Authentication Configuration ---
 

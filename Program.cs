@@ -13,8 +13,12 @@ using PortfolioPro.Core.Services;
 using PortfolioPro.Core.DTOs;
 using PortfolioPro.Validators;
 using System.Security.Claims;
+using Dapper;
+
 
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+DefaultTypeMap.MatchNamesWithUnderscores = true;
+SqlMapper.AddTypeHandler(new StringArrayHandler());
 var builder = WebApplication.CreateBuilder(args);
 /** This program will have some great juice wrld level
 information in it at some point. But you gotta treat
@@ -113,3 +117,23 @@ app.MapGet("/", () => "PortfolioPro API is running smoothly.");
 
 // Start the web server.
 app.Run();
+
+public class StringArrayHandler : SqlMapper.TypeHandler<string[]>
+{
+    // When sending data TO the database
+    public override void SetValue(System.Data.IDbDataParameter parameter, string[]? value)
+    {
+        parameter.Value = value ?? (object)DBNull.Value;
+    }
+
+    // When reading data FROM the database
+    public override string[]? Parse(object value)
+    {
+        // If it's already an array (Npgsql does this sometimes), just cast it
+        if (value is string[] array) return array;
+
+        // If it's a string from the DB (the {a,b} format), we need Npgsql to handle it
+        // but usually, adding the handler is enough for Dapper to coordinate with Npgsql
+        return value as string[];
+    }
+}

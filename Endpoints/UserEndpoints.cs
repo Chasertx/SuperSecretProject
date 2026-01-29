@@ -41,9 +41,9 @@ public static class UserEndpoints
                 ResumeUrl = request.ResumeUrl,
                 Tagline1 = request.Tagline1,
                 Tagline2 = request.Tagline2,
-                FrontendSkills = request.FrontendSkills,
-                BackendSkills = request.BackendSkills,
-                DatabaseSkills = request.DatabaseSkills,
+                FrontendSkills = request.FrontendSkills?.ToArray(), // Convert List to string[]
+                BackendSkills = request.BackendSkills?.ToArray(),   // Convert List to string[]
+                DatabaseSkills = request.DatabaseSkills?.ToArray(),  // Convert List to string[]
                 InstagramLink = request.InstagramLink,
                 GitHubLink = request.GitHubLink,
                 LinkedInLink = request.LinkedInLink,
@@ -105,8 +105,8 @@ public static class UserEndpoints
                 Title = u.Title,
                 Bio = u.Bio,
                 ProfileImageUrl = u.ProfileImageUrl,
-                FrontendSkills = u.FrontendSkills,
-                BackendSkills = u.BackendSkills
+                FrontendSkills = u.FrontendSkills?.ToArray(),
+                BackendSkills = u.BackendSkills?.ToArray()
             });
 
             return Results.Ok(userCards);
@@ -193,6 +193,30 @@ public static class UserEndpoints
             return Results.Ok(new { Url = publicUrl });
         }).RequireAuthorization()
         .DisableAntiforgery(); // Required for minimal API file uploads in some setups
+
+        group.MapPut("/update-profile", async (
+            User updatedUser,
+            ClaimsPrincipal user,
+            IUserRepository repo) =>
+        {
+            // 1. King Check
+            if (!user.IsInRole("King"))
+            {
+                return Results.Forbid();
+            }
+
+            // 2. Identity Check (Always use the Token ID, never trust the Body ID)
+            var loggedInUserId = repo.GetUserId(user);
+            updatedUser.Id = loggedInUserId;
+
+            // 3. Update
+            var success = await repo.UpdateUserProfileAsync(updatedUser);
+
+            return success
+                ? Results.Ok(new { Message = "Profile updated successfully, King." })
+                : Results.BadRequest("Could not update profile.");
+        })
+        .RequireAuthorization();
     }
 
 }

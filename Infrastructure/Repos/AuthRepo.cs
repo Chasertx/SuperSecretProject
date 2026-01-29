@@ -73,7 +73,7 @@ public class AuthRepository : IAuthRepository
         if (user == null || user.ResetExpiry < DateTime.UtcNow) return false;
 
         // Securely hash the new password and clear the used reset metadata.
-        user.Password = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
         user.ResetCode = null;
         user.ResetExpiry = null;
 

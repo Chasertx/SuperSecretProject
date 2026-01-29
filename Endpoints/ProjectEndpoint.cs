@@ -76,7 +76,7 @@ public static class ProjectEndpoints
         {
 
             // Retrieves and returns user-specific projects.
-            var userId = Guid.Parse("802a9231 - 6482 - 42a3 - b5d1 - cbe3bf994034");
+            var userId = Guid.Parse("802a9231-6482-42a3-b5d1-cbe3bf994034");
             var projects = await projectRepo.GetProjectsByUserIdAsync(userId);
 
             // Return the list of projects with a 200 OK status.

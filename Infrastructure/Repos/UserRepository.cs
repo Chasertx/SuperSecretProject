@@ -53,9 +53,9 @@ public class UserRepository(DbConnectionFactory connectionFactory) : IUserReposi
         reset_code AS ResetCode, 
         reset_expiry AS ResetExpiry,
         ""ProfileImageUrl"" AS ProfileImageUrl, 
-        ""FrontendSkills"" AS FrontendSkills, 
-        ""BackendSkills"" AS BackendSkills, 
-        ""DatabaseSkills"" AS DatabaseSkills, 
+        ""FrontendSkills""::text[] AS FrontendSkills, 
+        ""BackendSkills""::text[] AS BackendSkills, 
+        ""DatabaseSkills""::text[] AS DatabaseSkills,
         ""Bio"" AS Bio, 
         ""Title"" AS Title, 
         ""Tagline1"" AS Tagline1, 
@@ -221,6 +221,59 @@ public class UserRepository(DbConnectionFactory connectionFactory) : IUserReposi
         WHERE id = @UserId";
 
         await connection.ExecuteAsync(sql, new { UserId = userId, Url = url });
+    }
+
+    public async Task<bool> UpdateUserProfileAsync(User user)
+    {
+        using var connection = connectionFactory.Create();
+
+        // COALESCE(null, existing_value) returns existing_value.
+        // This ensures only non-null fields from your frontend get updated.
+        const string sql = @"
+        UPDATE users 
+        SET 
+            first_name = COALESCE(@FirstName, first_name),
+            last_name = COALESCE(@LastName, last_name),
+            ""Title"" = COALESCE(@Title, ""Title""),
+            ""Bio"" = COALESCE(@Bio, ""Bio""),
+            ""Tagline1"" = COALESCE(@Tagline1, ""Tagline1""),
+            ""Tagline2"" = COALESCE(@Tagline2, ""Tagline2""),
+            ""ProfileImageUrl"" = COALESCE(@ProfileImageUrl, ""ProfileImageUrl""),
+            ""FrontendSkills"" = COALESCE(@FrontendSkills::text[], ""FrontendSkills""::text[]),
+            ""BackendSkills"" = COALESCE(@BackendSkills::text[], ""BackendSkills""::text[]),
+            ""DatabaseSkills"" = COALESCE(@DatabaseSkills::text[], ""DatabaseSkills""::text[]),
+            instagram_link = COALESCE(@InstagramLink, instagram_link),
+            ""GitHubLink"" = COALESCE(@GitHubLink, ""GitHubLink""),
+            linkedin_link = COALESCE(@LinkedinLink, linkedin_link),
+            ""ResumeUrl"" = COALESCE(@ResumeUrl, ""ResumeUrl""),
+            ""YearsOfExperience"" = CASE 
+                                    WHEN @YearsOfExperience = 0 THEN ""YearsOfExperience"" 
+                                    ELSE @YearsOfExperience 
+                                 END
+        WHERE id = @Id;";
+
+        var parameters = new
+        {
+            user.Id,
+            user.FirstName,
+            user.LastName,
+            user.Title,
+            user.Bio,
+            user.Tagline1,
+            user.Tagline2,
+            user.ProfileImageUrl,
+            user.FrontendSkills,
+            user.BackendSkills,
+            user.DatabaseSkills,
+            user.InstagramLink,
+            user.GitHubLink,
+            user.LinkedInLink,
+            user.ResumeUrl,
+            user.YearsOfExperience
+        };
+
+        var rowsAffected = await connection.ExecuteAsync(sql, parameters);
+        return rowsAffected > 0;
     }
 
     public Guid GetUserId(ClaimsPrincipal user)

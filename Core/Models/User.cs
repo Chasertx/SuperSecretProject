@@ -3,31 +3,29 @@ using Postgrest.Attributes;
 
 namespace PortfolioPro.Core.Models;
 
-[Table("Users")]
+[Table("users")]
 public class User : BaseModel
 {
-    [PrimaryKey("Id", false)]
-    public Guid Id { get; set; }
+    [PrimaryKey("id", false)]
+    public Guid Id { get; set; } = Guid.NewGuid();
 
-    [Column("Username")]
+    [Column("username")]
     public string Username { get; set; } = string.Empty;
 
-    [Column("Email")]
+    [Column("email")]
     public string Email { get; set; } = string.Empty;
 
-    [Column("Role")]
-    public string Role { get; set; } = string.Empty;
+    [Column("role")]
+    public string Role { get; set; } = "User";
 
-    [Column("PasswordHash")]
+    // Matches the 'password' column in DB, property named PasswordHash for C# logic
+    [Column("password")]
     public string PasswordHash { get; set; } = string.Empty;
 
-    [Column("Password")]
-    public string Password { get; set; } = string.Empty;
-
-    [Column("FirstName")]
+    [Column("first_name")]
     public string? FirstName { get; set; }
 
-    [Column("LastName")]
+    [Column("last_name")]
     public string? LastName { get; set; }
 
     // --- Professional Profile ---
@@ -53,32 +51,33 @@ public class User : BaseModel
     [Column("Tagline2")]
     public string? Tagline2 { get; set; }
 
+    // FIX: Changed to List<string> to handle JSON arrays correctly
     [Column("FrontendSkills")]
-    public string? FrontendSkills { get; set; }
+    public string[]? FrontendSkills { get; set; } = Array.Empty<string>();
 
     [Column("BackendSkills")]
-    public string? BackendSkills { get; set; }
+    public string[]? BackendSkills { get; set; } = Array.Empty<string>();
 
     [Column("DatabaseSkills")]
-    public string? DatabaseSkills { get; set; }
+    public string[]? DatabaseSkills { get; set; } = Array.Empty<string>();
 
     // --- Socials ---
-    [Column("InstagramLink")]
+    [Column("instagram_link")]
     public string? InstagramLink { get; set; }
 
     [Column("GitHubLink")]
     public string? GitHubLink { get; set; }
 
-    [Column("LinkedInLink")]
+    [Column("linkedin_link")]
     public string? LinkedInLink { get; set; }
 
-    // --- Auth Infrastructure (Required by AuthRepo) ---
-    [Column("ResetCode")]
+    // --- Auth Infrastructure ---
+    [Column("reset_code")]
     public string? ResetCode { get; set; }
 
-    [Column("ResetExpiry")]
+    [Column("reset_expiry")]
     public DateTime? ResetExpiry { get; set; }
 
-    [Column("CreatedAt")]
+    [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

@@ -35,4 +35,6 @@ public interface IUserRepository
     Task UpdateResumeUrlAsync(Guid userId, string url);
 
     Guid GetUserId(ClaimsPrincipal user);
+
+    Task<bool> UpdateUserProfileAsync(User user);
 }

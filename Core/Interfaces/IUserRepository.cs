@@ -37,4 +37,6 @@ public interface IUserRepository
     Guid GetUserId(ClaimsPrincipal user);
 
     Task<bool> UpdateUserProfileAsync(User user);
+
+    Task<User?> GetUserByRoleAsync(string role);
 }

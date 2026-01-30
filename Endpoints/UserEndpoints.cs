@@ -243,7 +243,10 @@ public static class UserEndpoints
                 databaseSkills = king.DatabaseSkills,
                 profileImageUrl = king.ProfileImageUrl,
                 resumeUrl = king.ResumeUrl,
-                email = king.Email
+                email = king.Email,
+                instagramLink = king.InstagramLink,
+                linkendInLink = king.LinkedInLink,
+                gitHubLink = king.GitHubLink
             });
         });
 

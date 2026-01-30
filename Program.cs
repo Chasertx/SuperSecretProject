@@ -92,6 +92,19 @@ builder.Services.AddProblemDetails();
 builder.Services.Configure<SupabaseOptions>(
     builder.Configuration.GetSection(SupabaseOptions.SectionName));
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FrontendPolicy", policy =>
+    {
+        policy.WithOrigins(
+            "http://localhost:5173",
+            "https://lemon-stone-000a82c1e.2.azurestaticapps.net/"
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials();
+    });
+});
 var app = builder.Build();
 
 // Swagger

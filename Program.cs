@@ -116,7 +116,8 @@ if (app.Environment.IsDevelopment())
 
 // Enable the app to recognize WHO the user is based on the JWT
 app.UseAuthentication();
-
+app.UseRouting();
+app.UseCors("FrontendPolicy");
 // Enable the app to decide WHAT the user can do
 app.UseAuthorization();
 

@@ -246,7 +246,8 @@ public static class UserEndpoints
                 email = king.Email,
                 instagramLink = king.InstagramLink,
                 linkendInLink = king.LinkedInLink,
-                gitHubLink = king.GitHubLink
+                gitHubLink = king.GitHubLink,
+                role = king.Role
             });
         });
 

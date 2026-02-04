@@ -44,7 +44,7 @@ public class ProjectRepository(DbConnectionFactory connectionFactory) : IProject
 
         // Filters out projects that have a deleted_at timestamp
         const string sql = @"
-            SELECT id, user_id AS UserId, title, description, image_url AS ImageUrl, project_url AS ProjectUrl, created_at AS CreatedAt 
+            SELECT id, user_id AS UserId, title, description, image_url AS ImageUrl, project_url AS ProjectUrl, live_demo_url AS LiveDemoUrl, created_at AS CreatedAt 
             FROM projects 
             WHERE user_id = @UserId 
             AND deleted_at IS NULL";

@@ -31,6 +31,43 @@ public static class ProjectEndpoints
             return Results.Ok(projects);
         });
 
+        group.MapPut("/{id:guid}", async (
+           Guid id,
+           [FromForm] ProjectUploadRequest request,
+           IProjectRepository repo,
+           IStorageService storage,
+           HttpContext context) =>
+       {
+           var userId = Guid.Parse(context.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+           // 1. Verify it exists and belongs to the user
+           var existing = await repo.GetProjectByIdAsync(id);
+           if (existing == null || existing.UserId != userId) return Results.NotFound();
+
+           // 2. Update image if a new one was uploaded
+           if (request.Image != null)
+           {
+               existing.ImageUrl = await storage.UploadImageAsync(request.Image);
+           }
+
+           // 3. Map the rest
+           existing.Title = !string.IsNullOrWhiteSpace(request.Title) ? request.Title : existing.Title;
+           existing.Description = !string.IsNullOrWhiteSpace(request.Description) ? request.Description : existing.Description;
+           existing.ProjectUrl = request.ProjectUrl ?? existing.ProjectUrl;
+           existing.LiveDemoURL = request.LiveDemoURL ?? existing.LiveDemoURL;
+
+           // Only update ImageUrl if a new file actually arrived
+           if (request.Image != null && request.Image.Length > 0)
+           {
+               existing.ImageUrl = await storage.UploadImageAsync(request.Image);
+           }
+
+           await repo.UpdateProjectAsync(existing);
+           return Results.Ok(existing);
+       }).DisableAntiforgery()
+        .RequireAuthorization();
+
+
         /// <summary>
         /// Retrieves a new project with an image upload.
         /// </summary>
@@ -55,7 +92,8 @@ public static class ProjectEndpoints
                 Description = request.Description,
                 ImageUrl = imageUrl,
                 ProjectUrl = request.ProjectUrl,
-                UserId = userId
+                UserId = userId,
+                LiveDemoURL = request.LiveDemoURL
             };
 
             var validationResult = await validator.ValidateAsync(newProject);
@@ -164,6 +202,7 @@ public static class ProjectEndpoints
 
             return Results.NoContent();
         });
+
 
     }
 }

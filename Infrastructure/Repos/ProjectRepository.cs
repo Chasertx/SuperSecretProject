@@ -27,7 +27,7 @@ public class ProjectRepository(DbConnectionFactory connectionFactory) : IProject
 
         // SQL query with aliases to map snake_case to Pascal case.
         const string sql = @"
-            SELECT id, user_id AS UserId, title, description, image_url AS ImageUrl, project_url AS ProjectUrl, created_at AS CreatedAt 
+            SELECT id, user_id AS UserId, title, description, image_url AS ImageUrl, project_url AS ProjectUrl, live_demo_url AS LiveDemoURL, created_at AS CreatedAt 
             FROM projects 
             WHERE id = @Id";
 
@@ -62,8 +62,8 @@ public class ProjectRepository(DbConnectionFactory connectionFactory) : IProject
 
         // Maps object properties directly to SQL parameters.
         const string sql = @"
-            INSERT INTO projects (id, user_id, title, description, image_url, project_url, created_at) 
-            VALUES (@Id, @UserId, @Title, @Description, @ImageUrl, @ProjectUrl, NOW())";
+            INSERT INTO projects (id, user_id, title, description, image_url, project_url, live_demo_url, created_at) 
+            VALUES (@Id, @UserId, @Title, @Description, @ImageUrl, @ProjectUrl, @LiveDemoUrl, NOW())";
 
         // Execute the insert command.
         await connection.ExecuteAsync(sql, project);
@@ -82,19 +82,24 @@ public class ProjectRepository(DbConnectionFactory connectionFactory) : IProject
     /// <summary>
     /// Updates the text-based details and links of an existing project.
     /// </summary>
-    public async Task UpdateProjectAsync(Project project)
+    public async Task<bool> UpdateProjectAsync(Project project)
     {
         using var connection = connectionFactory.Create();
 
-        // Update specific fields based on the project ID.
+        // We use @Property names that match your Project model exactly
         const string sql = @"
-            UPDATE projects 
-            SET title = @Title, 
-                description = @Description, 
-                project_url = @ProjectUrl 
-            WHERE id = @Id";
+        UPDATE projects 
+        SET title = @Title, 
+            description = @Description, 
+            image_url = @ImageUrl, 
+            project_url = @ProjectUrl, 
+            live_demo_url = @LiveDemoUrl
+        WHERE id = @Id AND user_id = @UserId";
 
-        await connection.ExecuteAsync(sql, project);
+        var rowsAffected = await connection.ExecuteAsync(sql, project);
+
+        // Returns true if the project existed and was updated
+        return rowsAffected > 0;
     }
 
     /// <summary>

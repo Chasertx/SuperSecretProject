@@ -20,6 +20,9 @@ public class Project
     // Optional link to external project.
     public string? ProjectUrl { get; set; }
 
+    // Link to live demo of projects.
+    public string? LiveDemoURL { get; set; } = string.Empty;
+
     // Timestamp of when the project was created.
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

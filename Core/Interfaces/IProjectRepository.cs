@@ -18,7 +18,7 @@ public interface IProjectRepository
     Task AddProjectAsync(Project project);
 
     //Updates an existing project.
-    Task UpdateProjectAsync(Project project);
+    Task<bool> UpdateProjectAsync(Project project);
 
     //Deletes a project permanently.
     Task DeleteProjectAsync(Guid id);

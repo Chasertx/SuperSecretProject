@@ -3,6 +3,7 @@ using PortfolioPro.Core.Models;
 using PortfolioPro.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 
 namespace PortfolioPro.Endpoints;
 
@@ -23,7 +24,7 @@ public static class ProjectEndpoints
         /// <summary>
         /// Retrieves all projects for a specific user by their unique ID.
         /// </summary>
-        group.MapGet("/user/{userId:guid}", async (Guid userId, IProjectRepository repo) =>
+        group.MapGet("/{userId:guid}", async (Guid userId, IProjectRepository repo) =>
         {
             // Fetch project list from database.
             var projects = await repo.GetProjectsByUserIdAsync(userId);
@@ -66,6 +67,15 @@ public static class ProjectEndpoints
            return Results.Ok(existing);
        }).DisableAntiforgery()
         .RequireAuthorization();
+
+        group.MapGet("/storage/{id:guid}", async (Guid id, IProjectRepository repository) =>
+        {
+            var project = await repository.GetProjectByIdAsync(id);
+
+            return project is not null
+                ? Results.Ok(project)
+                : Results.NotFound(new { Message = $"Project {id} not found" });
+        });
 
 
         /// <summary>

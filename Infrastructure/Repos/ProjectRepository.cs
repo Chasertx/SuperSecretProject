@@ -27,12 +27,19 @@ public class ProjectRepository(DbConnectionFactory connectionFactory) : IProject
 
         // SQL query with aliases to map snake_case to Pascal case.
         const string sql = @"
-            SELECT id, user_id AS UserId, title, description, image_url AS ImageUrl, project_url AS ProjectUrl, live_demo_url AS LiveDemoURL, created_at AS CreatedAt 
-            FROM projects 
-            WHERE id = @Id";
+        SELECT 
+            id, 
+            user_id as UserId, 
+            title, 
+            description, 
+            image_url as ImageUrl, 
+            project_url as ProjectUrl, 
+            live_demo_url as LiveDemoURL, 
+            created_at as CreatedAt
+        FROM projects 
+        WHERE id = @Id";
 
-        // Execute query and return the first result or null.
-        return await connection.QueryFirstOrDefaultAsync<Project>(sql, new { Id = id });
+        return await connection.QuerySingleOrDefaultAsync<Project>(sql, new { Id = id });
     }
 
     /// <summary>

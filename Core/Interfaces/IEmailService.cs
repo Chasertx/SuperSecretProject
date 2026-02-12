@@ -2,12 +2,6 @@ namespace PortfolioPro.interfaces;
 
 public interface IEmailService
 {
-    /// <summary>
-    /// Sends an email.
-    /// </summary>
-    /// <param name="to">Recipient.</param>
-    /// <param name="subject">Subject.</param>
-    /// <param name="body">Message in the email.</param>
-    /// <returns></returns>
+    // Rule: Send a message to a specific email address with a title and the main text included
     Task SendEmailAsync(string to, string subject, string body);
 }

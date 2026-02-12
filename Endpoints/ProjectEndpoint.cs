@@ -9,65 +9,51 @@ namespace PortfolioPro.Endpoints;
 
 public static class ProjectEndpoints
 {
-    /* This allows you to define endpoints
-    for all your projects. It doesn't have
-    everything yet. But its got STUFF. */
-
-    /// <summary>
-    /// Registers project-related endpoints including CRUD and trash management.
-    /// </summary>
     public static void MapProjectEndpoints(this IEndpointRouteBuilder app)
     {
-        // Creates a grouped route prefix for all project actions.
         var group = app.MapGroup("/api/projects");
 
-        /// <summary>
-        /// Retrieves all projects for a specific user by their unique ID.
-        /// </summary>
+        // GET /api/projects/{userId} - Asks the database for every project belonging to a specific person's ID
         group.MapGet("/{userId:guid}", async (Guid userId, IProjectRepository repo) =>
         {
-            // Fetch project list from database.
             var projects = await repo.GetProjectsByUserIdAsync(userId);
-            // Return the list with a 200 OK status.
             return Results.Ok(projects);
         });
 
+        // PUT /api/projects/{id} - Finds a project, checks if the user owns it, and updates the text or image files
         group.MapPut("/{id:guid}", async (
            Guid id,
            [FromForm] ProjectUploadRequest request,
            IProjectRepository repo,
            IStorageService storage,
            HttpContext context) =>
-       {
-           var userId = Guid.Parse(context.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        {
+            var userId = Guid.Parse(context.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
-           // 1. Verify it exists and belongs to the user
-           var existing = await repo.GetProjectByIdAsync(id);
-           if (existing == null || existing.UserId != userId) return Results.NotFound();
+            var existing = await repo.GetProjectByIdAsync(id);
+            if (existing == null || existing.UserId != userId) return Results.NotFound();
 
-           // 2. Update image if a new one was uploaded
-           if (request.Image != null)
-           {
-               existing.ImageUrl = await storage.UploadImageAsync(request.Image);
-           }
+            if (request.Image != null)
+            {
+                existing.ImageUrl = await storage.UploadImageAsync(request.Image);
+            }
 
-           // 3. Map the rest
-           existing.Title = !string.IsNullOrWhiteSpace(request.Title) ? request.Title : existing.Title;
-           existing.Description = !string.IsNullOrWhiteSpace(request.Description) ? request.Description : existing.Description;
-           existing.ProjectUrl = request.ProjectUrl ?? existing.ProjectUrl;
-           existing.LiveDemoURL = request.LiveDemoURL ?? existing.LiveDemoURL;
+            existing.Title = !string.IsNullOrWhiteSpace(request.Title) ? request.Title : existing.Title;
+            existing.Description = !string.IsNullOrWhiteSpace(request.Description) ? request.Description : existing.Description;
+            existing.ProjectUrl = request.ProjectUrl ?? existing.ProjectUrl;
+            existing.LiveDemoURL = request.LiveDemoURL ?? existing.LiveDemoURL;
 
-           // Only update ImageUrl if a new file actually arrived
-           if (request.Image != null && request.Image.Length > 0)
-           {
-               existing.ImageUrl = await storage.UploadImageAsync(request.Image);
-           }
+            if (request.Image != null && request.Image.Length > 0)
+            {
+                existing.ImageUrl = await storage.UploadImageAsync(request.Image);
+            }
 
-           await repo.UpdateProjectAsync(existing);
-           return Results.Ok(existing);
-       }).DisableAntiforgery()
-        .RequireAuthorization();
+            await repo.UpdateProjectAsync(existing);
+            return Results.Ok(existing);
+        }).DisableAntiforgery()
+         .RequireAuthorization();
 
+        // GET /api/projects/storage/{id} - Internal tool to double-check a project's location in the storage system
         group.MapGet("/storage/{id:guid}", async (Guid id, IProjectRepository repository) =>
         {
             var project = await repository.GetProjectByIdAsync(id);
@@ -77,10 +63,7 @@ public static class ProjectEndpoints
                 : Results.NotFound(new { Message = $"Project {id} not found" });
         });
 
-
-        /// <summary>
-        /// Retrieves a new project with an image upload.
-        /// </summary>
+        // POST /api/projects - Takes new project info and a picture, verifies the data is valid, and saves it to the database
         group.MapPost("/", async (
             [FromForm] ProjectUploadRequest request,
             IStorageService storageService,
@@ -92,13 +75,12 @@ public static class ProjectEndpoints
             if (userIdClaim == null) return Results.Unauthorized();
             var userId = Guid.Parse(userIdClaim);
 
-            // Use request.Image
             var imageUrl = await storageService.UploadImageAsync(request.Image);
 
             var newProject = new Project
             {
                 Id = Guid.NewGuid(),
-                Title = request.Title,       // Use request.Title
+                Title = request.Title,
                 Description = request.Description,
                 ImageUrl = imageUrl,
                 ProjectUrl = request.ProjectUrl,
@@ -112,45 +94,35 @@ public static class ProjectEndpoints
 
             await projectRepo.AddProjectAsync(newProject);
 
+            Console.WriteLine($"Project '{request.Title}' successfully published.");
+
             return Results.Created($"/api/projects/{newProject.Id}", newProject);
         })
         .DisableAntiforgery()
         .RequireAuthorization();
 
-        /// <summary>
-        /// Gets all projects belonging to the currently logged-in user.
-        /// </summary>
+        // GET /api/projects/my-projects - Looks up the logged-in user's ID to show them only their own work
         group.MapGet("/my-projects", async (HttpContext context, IProjectRepository projectRepo) =>
         {
-
-            // Retrieves and returns user-specific projects.
             var userId = Guid.Parse("802a9231-6482-42a3-b5d1-cbe3bf994034");
             var projects = await projectRepo.GetProjectsByUserIdAsync(userId);
 
-            // Return the list of projects with a 200 OK status.
             return Results.Ok(projects);
         });
 
-        /// <summary>
-        /// Soft-deletes a project (moves it to trash bin).
-        /// </summary>
+        // DELETE /api/projects/{id} - Hides a project by moving it to the "Trash" instead of deleting it forever
         group.MapDelete("/{id:guid}", async (Guid id, IProjectRepository repo, HttpContext context) =>
         {
-            // Ensure the user owns the project before deleting.
             var userIdClaim = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (userIdClaim == null) return Results.Unauthorized();
 
-            // Performs the soft-delete operation on the database.
             var success = await repo.SoftDeleteProjectAsync(id, Guid.Parse(userIdClaim));
 
-            // Returns no content on success, or not found if the project doesn't exist.
             return success ? Results.NoContent() : Results.NotFound("Project not found or already deleted.");
         })
         .RequireAuthorization();
 
-        /// <summary>
-        /// Retrieves all soft-deleted projects for the authenticated user. (gets trash bin)
-        /// </summary>
+        // GET /api/projects/getDeleted - Shows the user a list of all items currently sitting in their "Trash" bin
         group.MapGet("/getDeleted", async (IProjectRepository repo, HttpContext context) =>
         {
             var userIdClaim = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -160,59 +132,43 @@ public static class ProjectEndpoints
             return Results.Ok(deletedProjects);
         });
 
-        /// <summary>
-        /// Restores a soft-deleted project back to active status.
-        /// </summary>
+        // PATCH /api/projects/{id}/restore - Takes a project out of the "Trash" and puts it back on the live site
         group.MapPatch("/{id:guid}/restore", async (Guid id, IProjectRepository repo, HttpContext context) =>
         {
-            // Identify the user making the restore request.
             var userIdClaim = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (userIdClaim == null) return Results.Unauthorized();
-            Console.WriteLine($"TOKEN ID=========================================================: {userIdClaim}");
 
-            // Attempt to clear the deletion timestamp.
             var success = await repo.RestoreProjectAsync(id, Guid.Parse(userIdClaim));
 
-            // Return OK or not found based on the operation result.
             return success
                 ? Results.Ok("Project successfully restored.")
                 : Results.NotFound("Project not found or is not currently deleted.");
         })
         .RequireAuthorization();
 
-        /// <summary>
-        /// Permanently deletes the a project from the repository.
-        /// </summary>
+        // DELETE /api/projects/{id}/permanent - Erases the project from the database and deletes its image file from the cloud
         group.MapDelete("/{id:guid}/permanent", async (Guid id, IProjectRepository repo, IStorageService sb, ClaimsPrincipal User) =>
         {
-            // Getting the identifier from the logged in user's claim
             var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
 
-            // Getting the image path url 
             var imageUrl = await repo.GetImagePathAsync(id, userId);
 
-            // Deleting the project 
             var success = await repo.DeleteProjectAsync(id, userId);
             if (!success) return Results.NotFound("Project not found or unauthorized.");
 
-            // Checks if an image url was found
             if (!string.IsNullOrEmpty(imageUrl))
             {
                 try
                 {
-                    // Deletes the image from the supabase bucket
                     await sb.DeleteImageAsync(imageUrl);
                 }
                 catch (Exception ex)
                 {
-                    // Log error but don't fail the request since DB record is already gone
-                    Console.WriteLine($"Orphaned file alert: {imageUrl}. Error: {ex.Message}");
+                    Console.WriteLine($"Cloud storage cleanup failed for: {imageUrl}. Error: {ex.Message}");
                 }
             }
 
             return Results.NoContent();
         });
-
-
     }
 }

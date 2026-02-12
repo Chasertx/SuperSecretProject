@@ -1,10 +1,10 @@
 namespace PortfolioPro.Core.Models;
-/**Model for login requests. **/
+
 public class LoginRequest
 {
-    // The email or username used to identify the user.
+    // The email address the person typed in to identify which account they want to access
     public string Email { get; set; } = string.Empty;
 
-    // The raw password string to be checked.
+    // The secret password the person typed in, which the system will check for a match
     public string Password { get; set; } = string.Empty;
 }

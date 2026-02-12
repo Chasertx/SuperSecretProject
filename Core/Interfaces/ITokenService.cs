@@ -1,15 +1,9 @@
 using PortfolioPro.Core.Models;
-/** This is an interface for
-managing JWT token creation.
-**/
+
 namespace PortfolioPro.Interfaces;
 
-/// <summary>
-/// Creates an encrypted JWT token
-/// contianing the user's identity
-/// claims.
-/// </summary>
 public interface ITokenService
 {
+    // Rule: Create a secure, digital "key card" (token) that proves who the user is while they browse the site
     string CreateToken(User user);
 }

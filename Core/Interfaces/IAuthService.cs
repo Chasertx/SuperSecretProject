@@ -1,28 +1,13 @@
-//Namespace for the repository layer.
 namespace PortfolioPro.Repositories;
 
 public interface IAuthRepository
 {
-    /// <summary>
-    /// Validates user credentials and returns a jwt token if successful.
-    /// </summary>
-    /// <param name="email"></param>
-    /// <param name="password"></param>
-    /// <returns></returns>
+    // Rule: Check if the email and password are correct; if they are, provide a secure digital "key" to enter the site
     Task<string?> LoginAsync(string email, string password);
 
-    /// <summary>
-    /// Creates a new user record in the database.
-    /// </summary>
-    /// <param name="email"></param>
-    /// <param name="password"></param>
-    /// <returns>True if user is created successfully.</returns>
+    // Rule: Take a new user's email and password and save them as a brand new account in the database
     Task<bool> RegisterAsync(string email, string password);
 
-    /// <summary>
-    /// Generates a password reset code.
-    /// </summary>
-    /// <param name="email"></param>
-    /// <returns>True if Successful.</returns>
+    // Rule: Start the recovery process for a user who forgot their password by creating a special reset code
     Task<bool> ResetPasswordRequestAsync(string email);
 }

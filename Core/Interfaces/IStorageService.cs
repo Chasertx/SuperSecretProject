@@ -1,21 +1,13 @@
 namespace PortfolioPro.Interfaces;
-/** Interface for putting pics from 
-your ski trip on your profile. **/
+
 public interface IStorageService
 {
-    /// <summary>
-    /// Processes an image upload from an
-    /// http request and stores it in the cloud.
-    /// </summary>
-    /// <param name="file">Data stream sent from the browser.</param>
-    /// <returns></returns>
+    // Rule: Send a picture to a specific "folder" (bucket) in the cloud and get back a web link to it
     Task<string> UploadImageAsync(IFormFile file, string bucketName);
 
+    // Rule: Send a picture to the default cloud storage area and get back a web link to it
     Task<string> UploadImageAsync(IFormFile file);
-    /// <summary>
-    /// For deleting the image from the storage repo.
-    /// </summary>
-    /// <param name="imageUrl"></param>
-    /// <returns></returns>
+
+    // Rule: Find a specific picture using its web link and permanently erase it from the cloud
     Task DeleteImageAsync(string imageUrl);
 }
